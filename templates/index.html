@@ -1763,6 +1763,14 @@ img.icon {
             onclick="openIconSettings()"
             title="App Settings"
           />
+          
+          <a href="/logout" title="Logout" style="display: inline-flex; align-items: center; margin-left: 8px;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--cream)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+              <polyline points="16 17 21 12 16 7"></polyline>
+              <line x1="21" y1="12" x2="9" y2="12"></line>
+            </svg>
+          </a>
         </div>
       </div>
     </header>
@@ -2425,11 +2433,19 @@ img.icon {
           </p>
         </div>
         
-        <!-- Done Button -->
-        <div style="margin-top: 1.5rem;">
+        <!-- Buttons -->
+        <div style="margin-top: 1.5rem; display: flex; flex-direction: column; gap: 0.5rem;">
           <button class="timer-btn" onclick="closeIconSettings()" style="width: 100%;">
             <img src="/static/icons/icon_done.png" class="icon" style="width: 16px; height: 16px; margin-right: 4px;"> Done
           </button>
+          <a href="/logout" class="btn btn-cancel" style="width: 100%; text-align: center; text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 6px;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+              <polyline points="16 17 21 12 16 7"></polyline>
+              <line x1="21" y1="12" x2="9" y2="12"></line>
+            </svg>
+            Log out
+          </a>
         </div>
       </div>
     </div>
@@ -2592,20 +2608,14 @@ img.icon {
           const savedSize = localStorage.getItem('iconSize') || 24;
           document.documentElement.style.setProperty('--icon-size-base', savedSize + 'px');
           
-          // Load saved theme
+          // Load saved theme - default is light (no system preference check)
           const savedTheme = localStorage.getItem('theme');
           if (savedTheme === 'dark') {
               document.documentElement.setAttribute('data-theme', 'dark');
               const toggle = document.getElementById('theme-toggle');
               if (toggle) toggle.checked = true;
           }
-          
-          // Also check system preference if no saved theme
-          if (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-              document.documentElement.setAttribute('data-theme', 'dark');
-              const toggle = document.getElementById('theme-toggle');
-              if (toggle) toggle.checked = true;
-          }
+          // Light theme is default - no need to check system preference
       });
       
       // Pomodoro state
@@ -3014,6 +3024,35 @@ img.icon {
         const newStart = new Date(weekStart);
         newStart.setDate(newStart.getDate() + dir * 7);
         weekStart = newStart;
+        
+        // Immediately update the week label for instant feedback
+        const endDate = new Date(weekStart);
+        endDate.setDate(endDate.getDate() + 6);
+        document.getElementById("week-label").textContent = 
+          `${fmtShort(fmt(weekStart))} — ${fmtShort(fmt(endDate))}`;
+        
+        // Update day headers immediately
+        const days = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
+        const todayStr = getTodayStr();
+        for (let i = 0; i < 7; i++) {
+          const d = new Date(weekStart);
+          d.setDate(d.getDate() + i);
+          const dateStr = fmt(d);
+          const isToday = dateStr === todayStr;
+          document.getElementById("h" + i).innerHTML =
+            `<span style="${isToday ? "color:var(--brown-dark);font-weight:600" : ""}">${days[i]}</span><br>` +
+            `<span style="font-size:0.75rem;color:${isToday ? "var(--tan-dark)" : "var(--tan)"}">${d.getDate()}</span>`;
+        }
+        
+        // Show loading state in table immediately
+        const tbody = document.getElementById("tbody");
+        const currentRows = tbody.querySelectorAll("tr");
+        currentRows.forEach(row => {
+          row.style.opacity = "0.4";
+          row.style.pointerEvents = "none";
+        });
+        
+        // Then load data in background
         loadWeek();
       }
 
