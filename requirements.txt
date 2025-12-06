@@ -1,3 +1,4 @@
 Flask==3.0.0
-reportlab==4.0.7
 Werkzeug==3.0.1
+reportlab==4.0.7
+supabase==2.10.0

@@ -1,9 +1,9 @@
 """
-Progress tracking and statistics service
+Progress tracking and statistics service - Supabase version
 """
 
 from datetime import date, timedelta
-from database.db import get_db
+from database.supabase_db import get_supabase
 from services.task_service import TaskService
 
 
@@ -14,30 +14,25 @@ class ProgressService:
         week_start = TaskService.get_week_start(date_str)
         week_end = TaskService.get_week_end(date_str)
 
-        db = get_db()
+        supabase = get_supabase()
         tasks = TaskService.get_all_tasks()
 
         # Get all progress logs for the week
-        logs = db.execute(
-            """
-            SELECT * FROM progress_logs 
-            WHERE week_start_date = ?
-        """,
-            (week_start.isoformat(),),
-        ).fetchall()
+        result = (
+            supabase.table("progress_logs")
+            .select("*")
+            .eq("week_start_date", week_start.isoformat())
+            .execute()
+        )
+        logs = result.data
 
         logs_by_task = {}
         for log in logs:
-            log_dict = dict(log)
-            task_id = log_dict["task_id"]
+            task_id = log["task_id"]
             if task_id not in logs_by_task:
                 logs_by_task[task_id] = {}
-            # Convert log_date to string if it's a date object
-            log_date = log_dict["log_date"]
-            if hasattr(log_date, "isoformat"):
-                log_date = log_date.isoformat()
-            log_dict["log_date"] = log_date  # Ensure consistent format in response
-            logs_by_task[task_id][log_date] = log_dict
+            log_date = log["log_date"]
+            logs_by_task[task_id][log_date] = log
 
         # Build week data structure
         week_data = {
@@ -79,82 +74,73 @@ class ProgressService:
     @staticmethod
     def log_progress(data):
         """Create or update a progress log entry"""
-        db = get_db()
+        supabase = get_supabase()
         log_date = date.fromisoformat(data["date"])
         week_start = TaskService.get_week_start(log_date)
 
         # Check if entry already exists
-        existing = db.execute(
-            """
-            SELECT id FROM progress_logs WHERE task_id = ? AND log_date = ?
-        """,
-            (data["task_id"], data["date"]),
-        ).fetchone()
+        existing = (
+            supabase.table("progress_logs")
+            .select("id")
+            .eq("task_id", data["task_id"])
+            .eq("log_date", data["date"])
+            .execute()
+        )
 
-        if existing:
+        if existing.data:
             # Update existing entry
-            db.execute(
-                """
-                UPDATE progress_logs 
-                SET metric_value = ?, notes = ?, is_completed = TRUE, updated_at = CURRENT_TIMESTAMP
-                WHERE id = ?
-            """,
-                (data.get("value"), data.get("notes"), existing["id"]),
-            )
-            db.commit()
-            log_id = existing["id"]
+            log_id = existing.data[0]["id"]
+            supabase.table("progress_logs").update(
+                {
+                    "metric_value": data.get("value"),
+                    "notes": data.get("notes"),
+                    "is_completed": True,
+                }
+            ).eq("id", log_id).execute()
         else:
             # Create new entry
-            cursor = db.execute(
-                """
-                INSERT INTO progress_logs (task_id, log_date, week_start_date, metric_value, notes, is_completed)
-                VALUES (?, ?, ?, ?, ?, TRUE)
-            """,
-                (
-                    data["task_id"],
-                    data["date"],
-                    week_start.isoformat(),
-                    data.get("value"),
-                    data.get("notes"),
-                ),
+            result = (
+                supabase.table("progress_logs")
+                .insert(
+                    {
+                        "task_id": data["task_id"],
+                        "log_date": data["date"],
+                        "week_start_date": week_start.isoformat(),
+                        "metric_value": data.get("value"),
+                        "notes": data.get("notes"),
+                        "is_completed": True,
+                    }
+                )
+                .execute()
             )
-            db.commit()
-            log_id = cursor.lastrowid
+            log_id = result.data[0]["id"] if result.data else None
 
         return ProgressService.get_log_by_id(log_id)
 
     @staticmethod
     def get_log_by_id(log_id):
         """Get a progress log by ID"""
-        db = get_db()
-        row = db.execute(
-            "SELECT * FROM progress_logs WHERE id = ?", (log_id,)
-        ).fetchone()
-        return dict(row) if row else None
+        supabase = get_supabase()
+        result = supabase.table("progress_logs").select("*").eq("id", log_id).execute()
+        return result.data[0] if result.data else None
 
     @staticmethod
     def update_progress(log_id, data):
         """Update a progress log entry"""
-        db = get_db()
-        updates = []
-        values = []
+        supabase = get_supabase()
 
+        update_data = {}
         if "value" in data:
-            updates.append("metric_value = ?")
-            values.append(data["value"])
+            update_data["metric_value"] = data["value"]
         if "notes" in data:
-            updates.append("notes = ?")
-            values.append(data["notes"])
+            update_data["notes"] = data["notes"]
         if "is_completed" in data:
-            updates.append("is_completed = ?")
-            values.append(data["is_completed"])
+            update_data["is_completed"] = data["is_completed"]
 
-        if updates:
-            updates.append("updated_at = CURRENT_TIMESTAMP")
-            values.append(log_id)
-            query = f"UPDATE progress_logs SET {', '.join(updates)} WHERE id = ?"
-            db.execute(query, values)
-            db.commit()
+        if update_data:
+            supabase.table("progress_logs").update(update_data).eq(
+                "id", log_id
+            ).execute()
 
         return ProgressService.get_log_by_id(log_id)
 
@@ -164,16 +150,27 @@ class ProgressService:
         Calculate health score based on 14-day completion rate and trend.
         Returns: float between 0.0 (poor) and 1.0 (excellent)
         """
-        db = get_db()
+        supabase = get_supabase()
         task = TaskService.get_task_by_id(task_id)
         if not task:
             return 0.5
 
         today = date.today()
         fourteen_days_ago = today - timedelta(days=14)
-        seven_days_ago = today - timedelta(days=7)
 
-        # Get scheduled days in the last 14 days
+        # Get all logs for last 14 days
+        result = (
+            supabase.table("progress_logs")
+            .select("log_date, is_completed")
+            .eq("task_id", task_id)
+            .gte("log_date", fourteen_days_ago.isoformat())
+            .eq("is_completed", True)
+            .execute()
+        )
+
+        completed_dates = {log["log_date"] for log in result.data}
+
+        # Calculate scheduled vs completed
         scheduled_count = 0
         completed_count = 0
         recent_scheduled = 0
@@ -183,47 +180,38 @@ class ProgressService:
 
         for i in range(14):
             check_date = today - timedelta(days=i)
-            day_of_week = (check_date.weekday() + 1) % 7  # Convert to Sunday=0
+            day_of_week = (check_date.weekday() + 1) % 7
 
             if TaskService.is_scheduled_for_day(task, day_of_week):
                 scheduled_count += 1
-                if i < 7:
+                is_recent = i < 7
+
+                if is_recent:
                     recent_scheduled += 1
                 else:
                     older_scheduled += 1
 
-                # Check if completed
-                log = db.execute(
-                    """
-                    SELECT is_completed FROM progress_logs 
-                    WHERE task_id = ? AND log_date = ? AND is_completed = TRUE
-                """,
-                    (task_id, check_date.isoformat()),
-                ).fetchone()
-
-                if log:
+                if check_date.isoformat() in completed_dates:
                     completed_count += 1
-                    if i < 7:
+                    if is_recent:
                         recent_completed += 1
                     else:
                         older_completed += 1
 
         if scheduled_count == 0:
-            return 0.5  # Neutral for new tasks
+            return 0.5
 
         completion_rate = completed_count / scheduled_count
-
-        # Calculate trend bonus
         recent_rate = recent_completed / recent_scheduled if recent_scheduled > 0 else 0
         older_rate = older_completed / older_scheduled if older_scheduled > 0 else 0
-        trend_bonus = (recent_rate - older_rate) * 0.2  # ±20% adjustment
+        trend_bonus = (recent_rate - older_rate) * 0.2
 
         return max(0.0, min(1.0, completion_rate + trend_bonus))
 
     @staticmethod
     def get_task_stats(task_id):
         """Get comprehensive statistics for a task"""
-        db = get_db()
+        supabase = get_supabase()
         task = TaskService.get_task_by_id(task_id)
         if not task:
             return None
@@ -231,61 +219,71 @@ class ProgressService:
         health_score = ProgressService.calculate_health_score(task_id)
 
         # Get total completions
-        total = db.execute(
-            """
-            SELECT COUNT(*) as count FROM progress_logs 
-            WHERE task_id = ? AND is_completed = TRUE
-        """,
-            (task_id,),
-        ).fetchone()
+        total_result = (
+            supabase.table("progress_logs")
+            .select("id", count="exact")
+            .eq("task_id", task_id)
+            .eq("is_completed", True)
+            .execute()
+        )
+        total_count = total_result.count or 0
 
-        # Get average value (for non-boolean tasks)
-        avg = db.execute(
-            """
-            SELECT AVG(metric_value) as avg_value FROM progress_logs 
-            WHERE task_id = ? AND metric_value IS NOT NULL
-        """,
-            (task_id,),
-        ).fetchone()
+        # Get all values for average
+        values_result = (
+            supabase.table("progress_logs")
+            .select("metric_value")
+            .eq("task_id", task_id)
+            .not_.is_("metric_value", "null")
+            .execute()
+        )
 
-        # Calculate current streak
+        values = [
+            v["metric_value"]
+            for v in values_result.data
+            if v["metric_value"] is not None
+        ]
+        avg_value = sum(values) / len(values) if values else None
+
         streak = ProgressService.calculate_streak(task_id)
 
         return {
             "task_id": task_id,
             "health_score": health_score,
-            "total_completions": total["count"],
-            "average_value": avg["avg_value"],
+            "total_completions": total_count,
+            "average_value": avg_value,
             "current_streak": streak,
         }
 
     @staticmethod
     def calculate_streak(task_id):
         """Calculate current consecutive completion streak"""
-        db = get_db()
+        supabase = get_supabase()
         task = TaskService.get_task_by_id(task_id)
         if not task:
             return 0
 
+        # Get all completed logs ordered by date desc
+        result = (
+            supabase.table("progress_logs")
+            .select("log_date")
+            .eq("task_id", task_id)
+            .eq("is_completed", True)
+            .order("log_date", desc=True)
+            .execute()
+        )
+
+        completed_dates = {log["log_date"] for log in result.data}
+
         streak = 0
         check_date = date.today()
 
-        for _ in range(365):  # Check up to a year back
+        for _ in range(365):
             day_of_week = (check_date.weekday() + 1) % 7
 
             if TaskService.is_scheduled_for_day(task, day_of_week):
-                log = db.execute(
-                    """
-                    SELECT is_completed FROM progress_logs 
-                    WHERE task_id = ? AND log_date = ? AND is_completed = TRUE
-                """,
-                    (task_id, check_date.isoformat()),
-                ).fetchone()
-
-                if log:
+                if check_date.isoformat() in completed_dates:
                     streak += 1
                 else:
-                    # If it's today and not completed yet, don't break the streak
                     if check_date == date.today():
                         check_date -= timedelta(days=1)
                         continue
@@ -298,7 +296,7 @@ class ProgressService:
     @staticmethod
     def get_summary(weeks=4):
         """Get summary data for the specified number of weeks"""
-        db = get_db()
+        supabase = get_supabase()
         tasks = TaskService.get_all_tasks()
         today = date.today()
         start_date = TaskService.get_week_start(today - timedelta(weeks=weeks * 7))
@@ -313,17 +311,18 @@ class ProgressService:
         for task in tasks:
             stats = ProgressService.get_task_stats(task["id"])
 
-            # Get weekly breakdown
             weekly_data = []
             for w in range(weeks):
                 week_start = TaskService.get_week_start(today - timedelta(weeks=w * 7))
-                logs = db.execute(
-                    """
-                    SELECT metric_value, is_completed FROM progress_logs 
-                    WHERE task_id = ? AND week_start_date = ?
-                """,
-                    (task["id"], week_start.isoformat()),
-                ).fetchall()
+
+                result = (
+                    supabase.table("progress_logs")
+                    .select("metric_value, is_completed")
+                    .eq("task_id", task["id"])
+                    .eq("week_start_date", week_start.isoformat())
+                    .execute()
+                )
+                logs = result.data
 
                 completed = sum(1 for log in logs if log["is_completed"])
                 values = [

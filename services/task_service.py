@@ -1,61 +1,51 @@
 """
-Task business logic service
+Task business logic service - Supabase version
 """
 
 from datetime import date, timedelta
-from database.db import get_db
+from database.supabase_db import get_supabase
 
 
 class TaskService:
     @staticmethod
     def get_all_tasks(include_archived=False):
         """Get all tasks, optionally including archived"""
-        db = get_db()
-        if include_archived:
-            query = "SELECT * FROM tasks ORDER BY created_at DESC"
-        else:
-            query = (
-                "SELECT * FROM tasks WHERE is_archived = FALSE ORDER BY created_at DESC"
-            )
+        supabase = get_supabase()
+        query = supabase.table("tasks").select("*")
 
-        rows = db.execute(query).fetchall()
-        return [dict(row) for row in rows]
+        if not include_archived:
+            query = query.eq("is_archived", False)
+
+        result = query.order("created_at", desc=True).execute()
+        return result.data
 
     @staticmethod
     def get_task_by_id(task_id):
         """Get a single task by ID"""
-        db = get_db()
-        row = db.execute("SELECT * FROM tasks WHERE id = ?", (task_id,)).fetchone()
-        return dict(row) if row else None
+        supabase = get_supabase()
+        result = supabase.table("tasks").select("*").eq("id", task_id).execute()
+        return result.data[0] if result.data else None
 
     @staticmethod
     def create_task(data):
         """Create a new task"""
-        db = get_db()
-        cursor = db.execute(
-            """
-            INSERT INTO tasks (name, description, metric_type, metric_unit, target_value, frequency, custom_days)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
-        """,
-            (
-                data["name"],
-                data.get("description"),
-                data["metric_type"],
-                data.get("metric_unit"),
-                data.get("target_value"),
-                data["frequency"],
-                data.get("custom_days"),
-            ),
-        )
-        db.commit()
-        return TaskService.get_task_by_id(cursor.lastrowid)
+        supabase = get_supabase()
+        insert_data = {
+            "name": data["name"],
+            "description": data.get("description"),
+            "metric_type": data["metric_type"],
+            "metric_unit": data.get("metric_unit"),
+            "target_value": data.get("target_value"),
+            "frequency": data["frequency"],
+            "custom_days": data.get("custom_days"),
+        }
+        result = supabase.table("tasks").insert(insert_data).execute()
+        return result.data[0] if result.data else None
 
     @staticmethod
     def update_task(task_id, data):
         """Update an existing task"""
-        db = get_db()
-        updates = []
-        values = []
+        supabase = get_supabase()
 
         allowed_fields = [
             "name",
@@ -65,36 +55,29 @@ class TaskService:
             "frequency",
             "custom_days",
         ]
-        for field in allowed_fields:
-            if field in data:
-                updates.append(f"{field} = ?")
-                values.append(data[field])
+        update_data = {k: v for k, v in data.items() if k in allowed_fields}
 
-        if updates:
-            updates.append("updated_at = CURRENT_TIMESTAMP")
-            values.append(task_id)
-            query = f"UPDATE tasks SET {', '.join(updates)} WHERE id = ?"
-            db.execute(query, values)
-            db.commit()
+        if update_data:
+            result = (
+                supabase.table("tasks").update(update_data).eq("id", task_id).execute()
+            )
+            return result.data[0] if result.data else None
 
         return TaskService.get_task_by_id(task_id)
 
     @staticmethod
     def delete_task(task_id):
         """Permanently delete a task and its progress logs"""
-        db = get_db()
-        db.execute("DELETE FROM tasks WHERE id = ?", (task_id,))
-        db.commit()
+        supabase = get_supabase()
+        supabase.table("tasks").delete().eq("id", task_id).execute()
 
     @staticmethod
     def archive_task(task_id):
         """Archive a task (soft delete)"""
-        db = get_db()
-        db.execute(
-            "UPDATE tasks SET is_archived = TRUE, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
-            (task_id,),
-        )
-        db.commit()
+        supabase = get_supabase()
+        supabase.table("tasks").update({"is_archived": True}).eq(
+            "id", task_id
+        ).execute()
 
     @staticmethod
     def get_week_start(target_date=None):
@@ -122,10 +105,8 @@ class TaskService:
         if frequency == "DAILY":
             return True
         elif frequency == "WEEKDAYS":
-            # Monday=1, Friday=5 (our Sunday-based: 1-5)
             return day_of_week in [1, 2, 3, 4, 5]
         elif frequency == "WEEKENDS":
-            # Sunday=0, Saturday=6
             return day_of_week in [0, 6]
         elif frequency == "CUSTOM":
             custom_days = task.get("custom_days", "")

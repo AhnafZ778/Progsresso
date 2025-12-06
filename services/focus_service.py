@@ -1,107 +1,121 @@
 """
-Focus/Pomodoro session service - business logic for focus timer
+Focus/Pomodoro session service - Supabase version
 """
 
 from datetime import datetime, date, timedelta
-from database.db import get_db
+from database.supabase_db import get_supabase
 
 
 class FocusService:
     @staticmethod
     def start_session(data):
         """Start a new focus session"""
-        db = get_db()
+        supabase = get_supabase()
 
         duration = data.get("duration_minutes", 25)
         kanban_item_id = data.get("kanban_item_id")
 
-        cursor = db.execute(
-            """
-            INSERT INTO focus_sessions (kanban_item_id, duration_minutes, started_at)
-            VALUES (?, ?, ?)
-        """,
-            (kanban_item_id, duration, datetime.now().isoformat()),
+        result = (
+            supabase.table("focus_sessions")
+            .insert(
+                {
+                    "kanban_item_id": kanban_item_id,
+                    "duration_minutes": duration,
+                    "started_at": datetime.now().isoformat(),
+                }
+            )
+            .execute()
         )
-        db.commit()
 
-        return FocusService.get_session_by_id(cursor.lastrowid)
+        return result.data[0] if result.data else None
 
     @staticmethod
     def complete_session(session_id, notes=None):
         """Mark a session as completed"""
-        db = get_db()
+        supabase = get_supabase()
 
-        db.execute(
-            """
-            UPDATE focus_sessions 
-            SET is_completed = TRUE, ended_at = ?, notes = ?
-            WHERE id = ?
-        """,
-            (datetime.now().isoformat(), notes, session_id),
-        )
-        db.commit()
+        supabase.table("focus_sessions").update(
+            {
+                "is_completed": True,
+                "ended_at": datetime.now().isoformat(),
+                "notes": notes,
+            }
+        ).eq("id", session_id).execute()
 
         return FocusService.get_session_by_id(session_id)
 
     @staticmethod
     def get_session_by_id(session_id):
         """Get a session by ID"""
-        db = get_db()
-        row = db.execute(
-            "SELECT * FROM focus_sessions WHERE id = ?", (session_id,)
-        ).fetchone()
-        if row:
-            session = dict(row)
+        supabase = get_supabase()
+        result = (
+            supabase.table("focus_sessions").select("*").eq("id", session_id).execute()
+        )
+
+        if result.data:
+            session = result.data[0]
             # Get task info if linked
             if session.get("kanban_item_id"):
-                task = db.execute(
-                    "SELECT title FROM kanban_items WHERE id = ?",
-                    (session["kanban_item_id"],),
-                ).fetchone()
-                session["task_title"] = task["title"] if task else None
+                task_result = (
+                    supabase.table("kanban_items")
+                    .select("title")
+                    .eq("id", session["kanban_item_id"])
+                    .execute()
+                )
+                session["task_title"] = (
+                    task_result.data[0]["title"] if task_result.data else None
+                )
             return session
         return None
 
     @staticmethod
     def get_today_sessions():
         """Get all sessions from today"""
-        db = get_db()
+        supabase = get_supabase()
         today = date.today().isoformat()
 
-        rows = db.execute(
-            """
-            SELECT fs.*, ki.title as task_title
-            FROM focus_sessions fs
-            LEFT JOIN kanban_items ki ON fs.kanban_item_id = ki.id
-            WHERE DATE(fs.started_at) = ?
-            ORDER BY fs.started_at DESC
-        """,
-            (today,),
-        ).fetchall()
+        # Get sessions with task info via join
+        result = (
+            supabase.table("focus_sessions")
+            .select("*, kanban_items(title)")
+            .gte("started_at", f"{today}T00:00:00")
+            .lte("started_at", f"{today}T23:59:59")
+            .order("started_at", desc=True)
+            .execute()
+        )
 
-        return [dict(row) for row in rows]
+        sessions = []
+        for row in result.data:
+            session = {k: v for k, v in row.items() if k != "kanban_items"}
+            session["task_title"] = (
+                row["kanban_items"]["title"] if row.get("kanban_items") else None
+            )
+            sessions.append(session)
+
+        return sessions
 
     @staticmethod
     def get_total_today():
         """Get total focus time for today in minutes"""
-        db = get_db()
+        supabase = get_supabase()
         today = date.today().isoformat()
 
-        row = db.execute(
-            """
-            SELECT COALESCE(SUM(duration_minutes), 0) as total
-            FROM focus_sessions 
-            WHERE DATE(started_at) = ? AND is_completed = TRUE
-        """,
-            (today,),
-        ).fetchone()
+        result = (
+            supabase.table("focus_sessions")
+            .select("duration_minutes")
+            .gte("started_at", f"{today}T00:00:00")
+            .lte("started_at", f"{today}T23:59:59")
+            .eq("is_completed", True)
+            .execute()
+        )
 
-        return row["total"]
+        total = sum(s["duration_minutes"] for s in result.data) if result.data else 0
+        return total
 
     @staticmethod
     def get_stats():
         """Get focus statistics"""
-        db = get_db()
+        supabase = get_supabase()
         today = date.today()
         week_start = today - timedelta(days=today.weekday())
 
@@ -109,26 +123,34 @@ class FocusService:
         today_total = FocusService.get_total_today()
 
         # This week's total
-        week_row = db.execute(
-            """
-            SELECT COALESCE(SUM(duration_minutes), 0) as total
-            FROM focus_sessions 
-            WHERE DATE(started_at) >= ? AND is_completed = TRUE
-        """,
-            (week_start.isoformat(),),
-        ).fetchone()
-        week_total = week_row["total"]
+        week_result = (
+            supabase.table("focus_sessions")
+            .select("duration_minutes")
+            .gte("started_at", f"{week_start.isoformat()}T00:00:00")
+            .eq("is_completed", True)
+            .execute()
+        )
+        week_total = (
+            sum(s["duration_minutes"] for s in week_result.data)
+            if week_result.data
+            else 0
+        )
 
-        # All time total
-        all_row = db.execute("""
-            SELECT COALESCE(SUM(duration_minutes), 0) as total,
-                   COUNT(*) as session_count
-            FROM focus_sessions WHERE is_completed = TRUE
-        """).fetchone()
-        all_total = all_row["total"]
-        session_count = all_row["session_count"]
+        # All time total and count
+        all_result = (
+            supabase.table("focus_sessions")
+            .select("duration_minutes", count="exact")
+            .eq("is_completed", True)
+            .execute()
+        )
+        all_total = (
+            sum(s["duration_minutes"] for s in all_result.data)
+            if all_result.data
+            else 0
+        )
+        session_count = all_result.count or 0
 
-        # Streak (consecutive days with sessions)
+        # Streak
         streak = FocusService._calculate_streak()
 
         return {
@@ -146,24 +168,25 @@ class FocusService:
     @staticmethod
     def _calculate_streak():
         """Calculate consecutive days with completed sessions"""
-        db = get_db()
+        supabase = get_supabase()
         streak = 0
         check_date = date.today()
 
         for _ in range(365):
-            row = db.execute(
-                """
-                SELECT COUNT(*) as count FROM focus_sessions 
-                WHERE DATE(started_at) = ? AND is_completed = TRUE
-            """,
-                (check_date.isoformat(),),
-            ).fetchone()
+            day_str = check_date.isoformat()
+            result = (
+                supabase.table("focus_sessions")
+                .select("id", count="exact")
+                .gte("started_at", f"{day_str}T00:00:00")
+                .lte("started_at", f"{day_str}T23:59:59")
+                .eq("is_completed", True)
+                .execute()
+            )
 
-            if row["count"] > 0:
+            if result.count and result.count > 0:
                 streak += 1
                 check_date -= timedelta(days=1)
             else:
-                # If it's today and no sessions yet, don't break streak
                 if check_date == date.today():
                     check_date -= timedelta(days=1)
                     continue
@@ -220,16 +243,16 @@ class FocusService:
     @staticmethod
     def delete_session(session_id):
         """Delete a focus session"""
-        db = get_db()
-        db.execute("DELETE FROM focus_sessions WHERE id = ?", (session_id,))
-        db.commit()
+        supabase = get_supabase()
+        supabase.table("focus_sessions").delete().eq("id", session_id).execute()
         return True
 
     @staticmethod
     def clear_today_sessions():
         """Clear all of today's focus sessions"""
-        db = get_db()
+        supabase = get_supabase()
         today = date.today().isoformat()
-        db.execute("DELETE FROM focus_sessions WHERE DATE(started_at) = ?", (today,))
-        db.commit()
+        supabase.table("focus_sessions").delete().gte(
+            "started_at", f"{today}T00:00:00"
+        ).lte("started_at", f"{today}T23:59:59").execute()
         return True

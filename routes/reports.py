@@ -24,7 +24,7 @@ def generate_pdf():
             pdf_buffer,
             mimetype="application/pdf",
             as_attachment=True,
-            download_name="habitpulse_report.pdf",
+            download_name="progresso_report.pdf",
         )
     except Exception as e:
         return jsonify({"error": str(e)}), 500

@@ -1,4 +1,4 @@
--- HabitPulse Database Schema
+-- Progresso Database Schema
 -- Enable foreign keys
 PRAGMA foreign_keys = ON;
 

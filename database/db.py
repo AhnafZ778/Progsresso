@@ -1,5 +1,5 @@
 """
-Database connection and initialization for HabitPulse
+Database connection and initialization for Progresso
 """
 
 import sqlite3

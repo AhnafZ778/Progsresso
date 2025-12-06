@@ -1,6 +1,6 @@
 # Future Responsiveness & Enhancement Implementations
 
-A curated list of UI/UX enhancements for HabitPulse. Request any item by number to implement.
+A curated list of UI/UX enhancements for Progresso. Request any item by number to implement.
 
 ---
 
