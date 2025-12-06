@@ -1,0 +1,3889 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>HabitPulse</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;600&family=Inter:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+      /* ===== LIGHT MODE (Milky Coffee) ===== */
+      :root {
+        --cream: #fdf6e3;
+        --paper: #f5ebda;
+        --tan-light: #d5b78b;
+        --tan: #c7a575;
+        --tan-dark: #b99566;
+        --brown: #8b7355;
+        --brown-dark: #6b5344;
+        --ink: #4a3728;
+        --success: #7c9a6e;
+        --danger: #c27c7c;
+        --blue: #6b8cae;
+        --header-bg: var(--tan-dark);
+        --card-bg: var(--cream);
+        --modal-bg: var(--cream);
+        --shadow-color: rgba(139, 115, 85, 0.15);
+      }
+
+      /* ===== DARK MODE (Mocha) ===== */
+      [data-theme="dark"] {
+        --cream: #2d2520;
+        --paper: #3d322a;
+        --tan-light: #5c4a3d;
+        --tan: #6b5544;
+        --tan-dark: #4a3c32;
+        --brown: #a08060;
+        --brown-dark: #c4a882;
+        --ink: #f5e6d3;
+        --success: #8fb57a;
+        --danger: #d4847a;
+        --blue: #7a9fc4;
+        --header-bg: #1a1512;
+        --card-bg: #3d322a;
+        --modal-bg: #2d2520;
+        --shadow-color: rgba(0, 0, 0, 0.3);
+      }
+
+      /* Smooth theme transition */
+      *, *::before, *::after {
+        transition: background-color 0.4s ease, color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        font-family: "Inter", sans-serif;
+        background: linear-gradient(135deg, var(--cream) 0%, var(--paper) 100%);
+        min-height: 100vh;
+        color: var(--ink);
+      }
+
+      .handwritten {
+        font-family: "Caveat", cursive;
+      }
+
+      header {
+        background: var(--tan-dark);
+        padding: 1rem 1.5rem;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      }
+
+      header .container {
+        max-width: 1100px;
+        margin: 0 auto;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 1rem;
+      }
+
+      h1 {
+        font-family: "Caveat", cursive;
+        font-size: 2rem;
+        color: var(--cream);
+        font-weight: 600;
+      }
+
+      /* Toggle Buttons - Cartoony Style */
+      .view-toggle {
+        display: flex;
+        gap: 0.5rem;
+      }
+
+      .toggle-btn {
+        background: var(--cream);
+        border: 3px solid transparent;
+        padding: 0.6rem 1.2rem;
+        border-radius: 20px;
+        font-weight: 600;
+        font-size: 0.95rem;
+        cursor: pointer;
+        transition: all 0.2s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        box-shadow: 0 4px 0 var(--brown);
+        position: relative;
+        top: 0;
+      }
+
+      .toggle-btn:hover {
+        transform: scale(1.05);
+      }
+
+      .toggle-btn:active {
+        top: 4px;
+        box-shadow: 0 0 0 var(--brown);
+      }
+
+      .toggle-btn.active {
+        background: var(--brown-dark);
+        color: var(--cream);
+        border-color: var(--cream);
+        box-shadow: 0 4px 0 var(--ink);
+      }
+
+      .toggle-btn span {
+        margin-right: 0.3rem;
+      }
+
+      .add-btn {
+        background: var(--cream);
+        color: var(--brown-dark);
+        border: none;
+        padding: 0.5rem 1rem;
+        border-radius: 8px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+
+      .add-btn:hover {
+        background: white;
+        transform: translateY(-1px);
+      }
+
+      main {
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 1.5rem;
+      }
+
+      /* View containers */
+      .view {
+        display: none;
+      }
+      .view.active {
+        display: block;
+      }
+
+      /* ===== HABITS VIEW ===== */
+      .week-nav {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+      }
+
+      .week-nav button {
+        background: var(--tan);
+        border: none;
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        cursor: pointer;
+        color: var(--brown-dark);
+        font-size: 1rem;
+        transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        box-shadow: 0 2px 8px rgba(139, 115, 85, 0.2);
+      }
+
+      .week-nav button:hover {
+        background: var(--tan-dark);
+        box-shadow: 0 4px 15px rgba(139, 115, 85, 0.4);
+        transform: scale(1.15);
+      }
+
+      /* Left arrow pops left */
+      .week-nav button:first-of-type:hover {
+        transform: scale(1.15) translateX(-8px);
+      }
+
+      /* Right arrow pops right */
+      .week-nav button:last-of-type:hover {
+        transform: scale(1.15) translateX(8px);
+      }
+
+      .week-nav button:active {
+        transform: scale(0.95);
+        box-shadow: 0 1px 4px rgba(139, 115, 85, 0.2);
+      }
+
+      .week-label {
+        font-family: "Caveat", cursive;
+        font-size: 1.4rem;
+        color: var(--brown-dark);
+      }
+
+      .card {
+        background: var(--cream);
+        border-radius: 12px;
+        box-shadow: 0 2px 12px rgba(139, 115, 85, 0.15);
+        overflow: hidden;
+        margin-bottom: 1.5rem;
+        border: 1px solid var(--tan-light);
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      thead {
+        background: var(--tan-light);
+      }
+
+      th {
+        padding: 0.75rem 0.5rem;
+        font-size: 0.85rem;
+        font-weight: 500;
+        color: var(--brown-dark);
+        text-align: center;
+      }
+
+      th:first-child {
+        text-align: left;
+        padding-left: 1rem;
+      }
+
+      tbody tr {
+        border-bottom: 1px dashed var(--tan-light);
+        transition: background 0.2s;
+      }
+
+      tbody tr:hover {
+        background: rgba(199, 165, 117, 0.1);
+      }
+
+      td {
+        padding: 0.6rem 0.5rem;
+        text-align: center;
+      }
+      td:first-child {
+        text-align: left;
+        padding-left: 1rem;
+      }
+
+      .task-name {
+        cursor: pointer;
+        color: var(--brown-dark);
+        font-weight: 500;
+        transition: color 0.2s;
+      }
+
+      .task-name:hover {
+        color: var(--tan-dark);
+      }
+
+      .cell {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        height: 32px;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.2s;
+        font-size: 1.1rem;
+      }
+
+      .cell:hover:not(.disabled) {
+        transform: scale(1.15);
+      }
+      .cell.today {
+        box-shadow: inset 0 0 0 2px var(--tan-dark);
+      }
+      .cell.done {
+        color: var(--success);
+        font-weight: bold;
+      }
+      .cell.missed {
+        color: var(--danger);
+      }
+      .cell.pending {
+        color: var(--tan);
+      }
+      .cell.disabled {
+        color: #ccc;
+        cursor: default;
+      }
+
+      .delete-btn {
+        background: none;
+        border: none;
+        cursor: pointer;
+        color: var(--tan);
+        font-size: 1rem;
+        transition: color 0.2s;
+      }
+
+      .delete-btn:hover {
+        color: var(--danger);
+      }
+
+      .empty {
+        padding: 3rem 1rem;
+        text-align: center;
+      }
+
+      .empty h3 {
+        font-family: "Caveat", cursive;
+        font-size: 1.8rem;
+        color: var(--brown);
+        margin-bottom: 0.5rem;
+      }
+
+      .empty p {
+        color: var(--brown);
+        margin-bottom: 1rem;
+      }
+
+      .charts {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+      }
+
+      @media (max-width: 640px) {
+        .charts {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      .chart-box {
+        background: var(--cream);
+        border-radius: 12px;
+        padding: 1rem;
+        border: 1px solid var(--tan-light);
+      }
+
+      .chart-box h3 {
+        font-family: "Caveat", cursive;
+        font-size: 1.3rem;
+        color: var(--brown-dark);
+        margin-bottom: 0.5rem;
+      }
+
+      .pdf-btn {
+        display: block;
+        margin: 0 auto;
+        background: var(--tan-dark);
+        color: var(--cream);
+        border: none;
+        padding: 0.75rem 1.5rem;
+        border-radius: 10px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+
+      .pdf-btn:hover {
+        background: var(--brown);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(139, 115, 85, 0.3);
+      }
+
+      /* ===== KANBAN VIEW ===== */
+      .kanban-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+      }
+
+      .kanban-title {
+        font-family: "Caveat", cursive;
+        font-size: 1.6rem;
+        color: var(--brown-dark);
+      }
+
+      .kanban-board {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1rem;
+        min-height: 400px;
+      }
+
+      @media (max-width: 768px) {
+        .kanban-board {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      .kanban-column {
+        background: var(--paper);
+        border-radius: 12px;
+        padding: 1rem;
+        border: 2px dashed var(--tan-light);
+      }
+
+      .column-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 1rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 2px solid var(--tan-light);
+      }
+
+      .column-title {
+        font-family: "Caveat", cursive;
+        font-size: 1.4rem;
+        color: var(--brown-dark);
+      }
+
+      .column-count {
+        background: var(--tan-light);
+        color: var(--brown-dark);
+        padding: 0.2rem 0.6rem;
+        border-radius: 10px;
+        font-size: 0.8rem;
+        font-weight: 600;
+      }
+
+      .kanban-items {
+        min-height: 200px;
+      }
+
+      .kanban-card {
+        background: var(--cream);
+        border-radius: 10px;
+        padding: 0.8rem;
+        margin-bottom: 0.75rem;
+        border: 1px solid var(--tan-light);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+
+      .kanban-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      }
+
+      .kanban-card-title {
+        font-weight: 500;
+        color: var(--ink);
+        margin-bottom: 0.4rem;
+      }
+
+      .kanban-card-date {
+        font-size: 0.8rem;
+        color: var(--brown);
+        display: flex;
+        align-items: center;
+        gap: 0.3rem;
+      }
+
+      .kanban-card-actions {
+        display: flex;
+        gap: 0.3rem;
+        margin-top: 0.5rem;
+      }
+
+      .move-btn {
+        background: var(--tan-light);
+        border: none;
+        padding: 0.3rem 0.5rem;
+        border-radius: 6px;
+        font-size: 0.75rem;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+
+      .move-btn:hover {
+        background: var(--tan);
+      }
+      .move-btn.done-btn:hover {
+        background: var(--success);
+        color: white;
+      }
+
+      /* Reopen/Back button pops left (since arrow points left) */
+      .move-btn:first-child:hover {
+        transform: translateX(-6px) scale(1.05);
+      }
+
+      /* Reopen button icon pops left */
+      .move-btn img[src*="undo"],
+      .move-btn img[src*="arrow_left"] {
+        transition: transform 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+      }
+
+      .move-btn:hover img[src*="undo"],
+      .move-btn:hover img[src*="arrow_left"] {
+        transform: translateX(-4px) scale(1.1);
+      }
+
+      /* ===== MODALS ===== */
+      .modal {
+        display: none;
+        position: fixed;
+        inset: 0;
+        z-index: 100;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .modal.active {
+        display: flex;
+        animation: fadeIn 0.3s ease;
+      }
+      
+      @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+      }
+
+      .modal-bg {
+        position: absolute;
+        inset: 0;
+        background: rgba(74, 55, 40, 0.4);
+        backdrop-filter: blur(2px);
+      }
+
+      .modal-box {
+        position: relative;
+        background: var(--cream);
+        border-radius: 16px;
+        width: 100%;
+        max-width: 400px;
+        margin: 1rem;
+        box-shadow: 0 8px 32px rgba(74, 55, 40, 0.2);
+        border: 2px dashed var(--tan-light); /* Cafe style border */
+        max-height: 90vh;
+        overflow-y: auto;
+      }
+
+      .modal-header {
+        padding: 1rem 1.25rem;
+        border-bottom: 1px dashed var(--tan-light);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: var(--paper); /* Slight subtle header bg */
+        border-radius: 14px 14px 0 0;
+      }
+      
+      .modal-header h3 {
+          font-family: "Caveat", cursive;
+          font-size: 1.8rem;
+          color: var(--brown-dark);
+          margin: 0;
+      }
+
+      .close-btn {
+        background: none;
+        border: none;
+        font-size: 1.5rem;
+        color: var(--tan);
+        cursor: pointer;
+      }
+
+      .close-btn:hover {
+        color: var(--brown);
+      }
+      .modal-body {
+        padding: 1.25rem;
+      }
+      .form-group {
+        margin-bottom: 1rem;
+      }
+
+      .form-group label {
+        display: block;
+        font-size: 0.85rem;
+        font-weight: 500;
+        color: var(--brown);
+        margin-bottom: 0.25rem;
+      }
+
+      .form-group input,
+      .form-group select,
+      .form-group textarea {
+        width: 100%;
+        padding: 0.6rem 0.75rem;
+        border: 1px solid var(--tan-light);
+        border-radius: 8px;
+        background: var(--paper);
+        color: var(--ink);
+        font-size: 0.95rem;
+      }
+
+      .form-group input:focus,
+      .form-group select:focus,
+      .form-group textarea:focus {
+        outline: none;
+        border-color: var(--tan-dark);
+        box-shadow: 0 0 0 2px rgba(185, 149, 102, 0.2);
+      }
+
+      .btn-row {
+        display: flex;
+        gap: 0.75rem;
+        justify-content: flex-end;
+        margin-top: 1.25rem;
+      }
+
+      .btn {
+        padding: 0.6rem 1.25rem;
+        border-radius: 8px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+        border: none;
+      }
+
+      .btn-cancel {
+        background: var(--paper);
+        color: var(--brown);
+        border: 1px solid var(--tan-light);
+      }
+
+      .btn-cancel:hover {
+        background: var(--tan-light);
+      }
+
+      .btn-primary {
+        background: var(--tan-dark);
+        color: var(--cream);
+      }
+
+      .btn-primary:hover {
+        background: var(--brown);
+      }
+
+      .btn-danger {
+        background: var(--danger);
+        color: white;
+      }
+      .btn-danger:hover {
+        background: #a66;
+      }
+
+      .stat-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.75rem;
+        margin: 1rem 0;
+      }
+
+      .stat-box {
+        background: var(--paper);
+        padding: 0.75rem;
+        border-radius: 8px;
+        text-align: center;
+      }
+
+      .stat-box .value {
+        font-family: "Caveat", cursive;
+        font-size: 1.8rem;
+        color: var(--brown-dark);
+      }
+
+      .stat-box .label {
+        font-size: 0.75rem;
+        color: var(--brown);
+      }
+
+      .toast-container {
+        position: fixed;
+        top: 1rem;
+        right: 1rem;
+        z-index: 200;
+      }
+
+      .toast {
+        background: var(--brown-dark);
+        color: var(--cream);
+        padding: 0.75rem 1rem;
+        border-radius: 8px;
+        margin-bottom: 0.5rem;
+        animation: slideIn 0.3s ease;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      }
+
+      .toast.success {
+        background: var(--success);
+      }
+      .toast.error {
+        background: var(--danger);
+      }
+
+      @keyframes slideIn {
+        from {
+          transform: translateX(100%);
+          opacity: 0;
+        }
+        to {
+          transform: translateX(0);
+          opacity: 1;
+        }
+      }
+
+      input[type="range"] {
+        -webkit-appearance: none;
+        width: 100%;
+        height: 8px;
+        border-radius: 4px;
+        background: var(--tan-light);
+      }
+
+      input[type="range"]::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: var(--tan-dark);
+        cursor: pointer;
+        border: 2px solid var(--cream);
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+      }
+
+      .hidden {
+        display: none !important;
+      }
+
+      /* Loading state */
+      .loading {
+        opacity: 0.6;
+        pointer-events: none;
+      }
+
+/* CSS Variables */
+:root {
+  --icon-size-base: 40px;
+}
+
+/* Custom Icons */
+/* Custom Icons */
+/* Applies to ALL images with .icon class */
+img.icon {
+  width: var(--icon-size-base) !important;
+  height: var(--icon-size-base) !important;
+  vertical-align: middle;
+  object-fit: contain;
+  transition: width 0.2s, height 0.2s;
+}
+
+/* Specific overrides if needed, but keeping global control is key */
+.toggle-btn .icon,
+.column-title .icon,
+.add-btn .icon {
+  /* Using exact base size for consistency as requested */
+  width: var(--icon-size-base) !important;
+  height: var(--icon-size-base) !important;
+  margin-right: 4px;
+}
+
+/* Motivation Box - Animated Gradient Card */
+.motivation-box {
+  width: 100%;
+  max-width: 300px;
+  min-height: 200px;
+  background: var(--brown-dark);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+  position: relative;
+  box-shadow: 0px 0px 8px 2px rgba(0, 0, 0, 0.15);
+  cursor: pointer;
+  border-radius: 16px;
+  margin: 20px auto;
+}
+
+.motivation-box .motivation-content {
+  border-radius: 12px;
+  background: var(--cream);
+  width: calc(100% - 6px);
+  height: calc(100% - 6px);
+  z-index: 1;
+  padding: 20px 15px;
+  color: var(--ink);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  position: relative;
+}
+
+.motivation-content::before {
+  opacity: 0;
+  transition: opacity 300ms;
+  content: " ";
+  display: block;
+  background: white;
+  width: 8px;
+  height: 60px;
+  position: absolute;
+  filter: blur(50px);
+  overflow: hidden;
+}
+
+.motivation-box:hover .motivation-content::before {
+  opacity: 1;
+}
+
+.motivation-box::before {
+  opacity: 0;
+  content: " ";
+  position: absolute;
+  display: block;
+  width: 100px;
+  height: 400px;
+  background: linear-gradient(var(--success), var(--tan-dark), var(--danger));
+  transition: opacity 300ms;
+  animation: rotation_gradient 6000ms infinite linear;
+  animation-play-state: paused;
+}
+
+.motivation-box:hover::before {
+  opacity: 1;
+  animation-play-state: running;
+}
+
+.motivation-box::after {
+  position: absolute;
+  content: " ";
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: rgba(var(--brown-dark), 0.2);
+  backdrop-filter: blur(50px);
+  border-radius: 16px;
+}
+
+@keyframes rotation_gradient {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.motivation-box.hidden {
+  display: none;
+}
+
+@keyframes popIn {
+  from { opacity: 0; transform: scale(0.9); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+      /* ===== FOCUS TIMER STYLES ===== */
+      .timer-circle {
+        position: relative;
+        width: 200px;
+        height: 200px;
+        margin: 0 auto 1.5rem;
+      }
+      .timer-circle svg {
+        transform: rotate(-90deg);
+      }
+      .timer-ring-bg {
+        fill: none;
+        stroke: var(--tan-light);
+        stroke-width: 8;
+      }
+      .timer-ring {
+        fill: none;
+        stroke: var(--tan-dark);
+        stroke-width: 8;
+        stroke-linecap: round;
+        stroke-dasharray: 565.48;
+        stroke-dashoffset: 0;
+        transition: stroke-dashoffset 1s linear;
+      }
+      .timer-display {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font-family: "Caveat", cursive;
+        font-size: 3.5rem;
+        color: var(--brown-dark);
+      }
+      .timer-controls {
+        display: flex;
+        justify-content: center;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+      }
+      .timer-btn {
+        background: var(--tan-dark);
+        color: var(--cream);
+        border: none;
+        padding: 0.8rem 2rem;
+        border-radius: 25px;
+        font-weight: 600;
+        font-size: 1rem;
+        cursor: pointer;
+        transition: all 0.2s;
+        box-shadow: 0 3px 0 var(--brown);
+      }
+      .timer-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 0 var(--brown);
+      }
+      .timer-btn:active {
+        transform: translateY(3px);
+        box-shadow: 0 0 0 var(--brown);
+      }
+      .timer-btn.secondary {
+        background: var(--paper);
+        color: var(--brown);
+        box-shadow: 0 3px 0 var(--tan);
+      }
+      .linked-task-display {
+        background: var(--paper);
+        padding: 0.75rem 1rem;
+        border-radius: 10px;
+        margin-bottom: 1.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+      }
+      .settings-icon {
+        background: var(--tan-light);
+        border: none;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        cursor: pointer;
+        font-size: 1.2rem;
+        transition: all 0.2s;
+        position: absolute;
+        top: 0;
+        right: 0;
+      }
+      .settings-icon:hover {
+        background: var(--tan);
+        transform: rotate(45deg);
+      }
+      .focus-stats {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+      }
+      .focus-stat-box {
+        background: var(--cream);
+        padding: 1rem;
+        border-radius: 12px;
+        text-align: center;
+        border: 1px solid var(--tan-light);
+      }
+      .focus-stat-value {
+        font-family: "Caveat", cursive;
+        font-size: 2rem;
+        color: var(--brown-dark);
+      }
+      .focus-stat-label {
+        font-size: 0.8rem;
+        color: var(--brown);
+      }
+      .motivation-display {
+        background: var(--paper);
+        padding: 1rem;
+        border-radius: 12px;
+        text-align: center;
+        margin-bottom: 1.5rem;
+        border: 2px dashed var(--tan-light);
+      }
+      .session-history {
+        background: var(--cream);
+        border-radius: 12px;
+        padding: 1rem;
+        border: 1px solid var(--tan-light);
+        max-height: 200px;
+        overflow-y: auto;
+      }
+      .session-history h4 {
+        font-family: "Caveat", cursive;
+        font-size: 1.3rem;
+        color: var(--brown-dark);
+        margin-bottom: 0.75rem;
+      }
+      .session-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.5rem;
+        border-bottom: 1px dashed var(--tan-light);
+      }
+      .session-item:last-child {
+        border-bottom: none;
+      }
+      .session-task {
+        font-weight: 500;
+        color: var(--ink);
+      }
+      .session-duration {
+        color: var(--brown);
+        font-size: 0.9rem;
+      }
+      .session-status {
+        color: var(--success);
+      }
+      .duration-options {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+        justify-content: center;
+        margin: 1rem 0;
+      }
+      .duration-btn {
+        background: var(--paper);
+        border: 2px solid var(--tan-light);
+        padding: 0.6rem 1.2rem;
+        border-radius: 20px;
+        cursor: pointer;
+        font-weight: 500;
+        transition: all 0.2s;
+      }
+      .duration-btn:hover {
+        border-color: var(--tan-dark);
+      }
+      .duration-btn.active {
+        background: var(--tan-dark);
+        color: var(--cream);
+        border-color: var(--tan-dark);
+      }
+      .linkable-tasks {
+        max-height: 250px;
+        overflow-y: auto;
+      }
+      .linkable-task-btn {
+        display: block;
+        width: 100%;
+        text-align: left;
+        background: var(--paper);
+        border: 1px solid var(--tan-light);
+        padding: 0.75rem 1rem;
+        margin-bottom: 0.5rem;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+      .linkable-task-btn:hover {
+        background: var(--tan-light);
+      }
+
+      /* ===== COFFEE CUP THEME TOGGLE ===== */
+      .coffee-toggle-container {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+      }
+
+      .coffee-toggle {
+        position: relative;
+        display: inline-block;
+        width: 80px;
+        height: 50px;
+        cursor: pointer;
+      }
+
+      .coffee-toggle input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+      }
+
+      .coffee-cup {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(180deg, #f5e6d3 0%, #e8d5c4 100%);
+        border-radius: 0 0 25px 25px;
+        border: 3px solid var(--brown);
+        transition: all 0.5s ease;
+        overflow: hidden;
+        box-shadow: 0 4px 12px rgba(139, 115, 85, 0.3);
+      }
+
+      /* Cup handle */
+      .coffee-cup::before {
+        content: '';
+        position: absolute;
+        right: -14px;
+        top: 10px;
+        width: 14px;
+        height: 24px;
+        border: 3px solid var(--brown);
+        border-left: none;
+        border-radius: 0 12px 12px 0;
+        transition: border-color 0.5s ease;
+      }
+
+      /* Coffee liquid */
+      .coffee-liquid {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 60%;
+        background: linear-gradient(180deg, #d4a574 0%, #c49a6c 50%, #b8906a 100%);
+        border-radius: 0 0 20px 20px;
+        transition: all 0.5s ease;
+      }
+
+      /* Steam wisps */
+      .coffee-steam {
+        position: absolute;
+        top: -8px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 30px;
+        height: 15px;
+        opacity: 0.6;
+      }
+
+      .coffee-steam::before,
+      .coffee-steam::after {
+        content: '';
+        position: absolute;
+        width: 8px;
+        height: 15px;
+        background: var(--tan-light);
+        border-radius: 50%;
+        animation: steam-rise 2s ease-in-out infinite;
+      }
+
+      .coffee-steam::before {
+        left: 5px;
+        animation-delay: 0.3s;
+      }
+
+      .coffee-steam::after {
+        right: 5px;
+        animation-delay: 0.6s;
+      }
+
+      @keyframes steam-rise {
+        0%, 100% {
+          transform: translateY(0) scale(1);
+          opacity: 0.4;
+        }
+        50% {
+          transform: translateY(-8px) scale(1.2);
+          opacity: 0.7;
+        }
+      }
+
+      /* Dark mode (Mocha) - when checkbox is checked */
+      .coffee-toggle input:checked + .coffee-cup {
+        background: linear-gradient(180deg, #3d322a 0%, #2d2520 100%);
+        border-color: #c4a882;
+      }
+
+      .coffee-toggle input:checked + .coffee-cup::before {
+        border-color: #c4a882;
+      }
+
+      .coffee-toggle input:checked + .coffee-cup .coffee-liquid {
+        height: 75%;
+        background: linear-gradient(180deg, #5c4033 0%, #4a3428 50%, #3d2a1f 100%);
+      }
+
+      .coffee-toggle input:checked + .coffee-cup .coffee-steam::before,
+      .coffee-toggle input:checked + .coffee-cup .coffee-steam::after {
+        background: #6b5544;
+        animation: steam-rise-dark 2s ease-in-out infinite;
+      }
+
+      @keyframes steam-rise-dark {
+        0%, 100% {
+          transform: translateY(0) scale(1);
+          opacity: 0.3;
+        }
+        50% {
+          transform: translateY(-8px) scale(1.2);
+          opacity: 0.5;
+        }
+      }
+
+      /* Hover effect */
+      .coffee-toggle:hover .coffee-cup {
+        transform: scale(1.05);
+        box-shadow: 0 6px 20px rgba(139, 115, 85, 0.4);
+      }
+
+      /* ===== NAVBAR COFFEE CUP (Compact) ===== */
+      .coffee-toggle-nav {
+        position: relative;
+        display: inline-block;
+        width: 40px;
+        height: 36px;
+        cursor: pointer;
+        margin: 0 4px;
+      }
+
+      .coffee-toggle-nav input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+        position: absolute;
+      }
+
+      .coffee-cup-nav {
+        position: absolute;
+        top: 6px;
+        left: 0;
+        width: 28px;
+        height: 26px;
+        background: linear-gradient(180deg, #f5e6d3 0%, #e8d5c4 100%);
+        border-radius: 0 0 14px 14px;
+        border: 2px solid var(--cream);
+        transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        overflow: hidden;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+      }
+
+      /* Cup handle */
+      .coffee-cup-nav::before {
+        content: '';
+        position: absolute;
+        right: -9px;
+        top: 5px;
+        width: 8px;
+        height: 14px;
+        border: 2px solid var(--cream);
+        border-left: none;
+        border-radius: 0 8px 8px 0;
+        transition: all 0.4s ease;
+      }
+
+      /* Coffee liquid with flowing animation */
+      .coffee-liquid-nav {
+        position: absolute;
+        bottom: 0;
+        left: -2px;
+        right: -2px;
+        height: 55%;
+        background: linear-gradient(90deg, 
+          #c49a6c 0%, 
+          #d4a574 25%, 
+          #c49a6c 50%, 
+          #d4a574 75%, 
+          #c49a6c 100%);
+        background-size: 200% 100%;
+        border-radius: 0 0 12px 12px;
+        transition: height 0.4s ease, background 0.4s ease;
+        animation: coffee-flow 3s ease-in-out infinite;
+      }
+
+      @keyframes coffee-flow {
+        0%, 100% { 
+          background-position: 0% 50%;
+        }
+        50% { 
+          background-position: 100% 50%;
+        }
+      }
+
+      /* Steam wisps */
+      .coffee-cup-nav::after {
+        content: '';
+        position: absolute;
+        top: -10px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 4px;
+        height: 8px;
+        background: rgba(255, 255, 255, 0.7);
+        border-radius: 50%;
+        opacity: 0;
+        animation: steam-wisp 4s ease-in-out infinite;
+      }
+
+      @keyframes steam-wisp {
+        0%, 70%, 100% {
+          opacity: 0;
+          transform: translateX(-50%) translateY(0) scale(0.5);
+        }
+        75% {
+          opacity: 0.8;
+          transform: translateX(-50%) translateY(-4px) scale(1);
+        }
+        85% {
+          opacity: 0.5;
+          transform: translateX(-30%) translateY(-10px) scale(1.2);
+        }
+        95% {
+          opacity: 0;
+          transform: translateX(-60%) translateY(-16px) scale(0.8);
+        }
+      }
+
+      /* Second steam wisp (delayed) */
+      .coffee-liquid-nav::before {
+        content: '';
+        position: absolute;
+        top: -14px;
+        left: 30%;
+        width: 3px;
+        height: 6px;
+        background: rgba(255, 255, 255, 0.6);
+        border-radius: 50%;
+        opacity: 0;
+        animation: steam-wisp-2 4s ease-in-out infinite;
+        animation-delay: 2s;
+      }
+
+      @keyframes steam-wisp-2 {
+        0%, 70%, 100% {
+          opacity: 0;
+          transform: translateY(0) scale(0.4);
+        }
+        75% {
+          opacity: 0.6;
+          transform: translateY(-3px) scale(0.8);
+        }
+        85% {
+          opacity: 0.4;
+          transform: translateY(-8px) scale(1);
+        }
+        95% {
+          opacity: 0;
+          transform: translateY(-12px) scale(0.6);
+        }
+      }
+
+      /* Dark mode (Mocha) */
+      .coffee-toggle-nav input:checked + .coffee-cup-nav {
+        background: linear-gradient(180deg, #3d322a 0%, #2d2520 100%);
+        border-color: #c4a882;
+      }
+
+      .coffee-toggle-nav input:checked + .coffee-cup-nav::before {
+        border-color: #c4a882;
+      }
+
+      .coffee-toggle-nav input:checked + .coffee-cup-nav::after {
+        background: rgba(200, 180, 160, 0.5);
+      }
+
+      .coffee-toggle-nav input:checked + .coffee-cup-nav .coffee-liquid-nav {
+        height: 75%;
+        background: linear-gradient(90deg, 
+          #3d2a1f 0%, 
+          #5c4033 25%, 
+          #3d2a1f 50%, 
+          #5c4033 75%, 
+          #3d2a1f 100%);
+        background-size: 200% 100%;
+      }
+
+      .coffee-toggle-nav input:checked + .coffee-cup-nav .coffee-liquid-nav::before {
+        background: rgba(180, 160, 140, 0.4);
+      }
+
+      /* Hover effect */
+      .coffee-toggle-nav:hover .coffee-cup-nav {
+        transform: scale(1.15) rotate(-5deg);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      }
+
+      .coffee-toggle-nav:active .coffee-cup-nav {
+        transform: scale(0.95);
+      }
+
+      /* ===== FUN ANIMATIONS ===== */
+
+      /* 1. ICON HOVER EFFECTS */
+      img.icon {
+        transition: transform 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55), filter 0.2s ease !important;
+      }
+
+      img.icon:hover {
+        transform: scale(1.2) rotate(8deg) !important;
+        filter: drop-shadow(0 4px 8px rgba(139, 115, 85, 0.4));
+      }
+
+      /* Wiggle animation for special icons */
+      @keyframes wiggle {
+        0%, 100% { transform: rotate(0deg); }
+        25% { transform: rotate(-10deg); }
+        75% { transform: rotate(10deg); }
+      }
+
+      .toggle-btn:hover .icon,
+      .add-btn:hover .icon {
+        animation: wiggle 0.5s ease-in-out;
+      }
+
+      /* Coffee steam effect for done icons */
+      @keyframes steam {
+        0% { opacity: 0; transform: translateY(0) scale(1); }
+        50% { opacity: 0.6; }
+        100% { opacity: 0; transform: translateY(-10px) scale(1.3); }
+      }
+
+      /* 2. KANBAN CARD DRAG EFFECTS */
+      .kanban-card {
+        transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+        cursor: grab;
+      }
+
+      .kanban-card:hover {
+        transform: translateY(-4px) rotate(1deg);
+        box-shadow: 0 8px 20px rgba(139, 115, 85, 0.25);
+      }
+
+      .kanban-card:active {
+        cursor: grabbing;
+        transform: scale(1.05) rotate(2deg);
+        box-shadow: 0 12px 30px rgba(139, 115, 85, 0.35);
+        opacity: 0.9;
+        z-index: 100;
+      }
+
+      .kanban-card.dragging {
+        transform: scale(1.05) rotate(3deg);
+        box-shadow: 0 16px 40px rgba(139, 115, 85, 0.4);
+        opacity: 0.85;
+      }
+
+      .kanban-column.drop-target {
+        background: rgba(124, 154, 110, 0.15);
+        border-color: var(--success);
+        animation: pulse-border 1s infinite;
+      }
+
+      @keyframes pulse-border {
+        0%, 100% { border-color: var(--success); }
+        50% { border-color: var(--tan-dark); }
+      }
+
+      /* 3. TIMER ANIMATIONS */
+      .timer-circle {
+        transition: transform 0.3s ease;
+      }
+
+      .timer-circle.running {
+        animation: timer-pulse 2s ease-in-out infinite;
+      }
+
+      @keyframes timer-pulse {
+        0%, 100% { 
+          transform: scale(1);
+          filter: drop-shadow(0 0 0 transparent);
+        }
+        50% { 
+          transform: scale(1.02);
+          filter: drop-shadow(0 0 20px rgba(124, 154, 110, 0.5));
+        }
+      }
+
+      .timer-circle.complete {
+        animation: timer-complete 0.6s ease-out;
+      }
+
+      @keyframes timer-complete {
+        0% { transform: scale(1); }
+        30% { transform: scale(1.1); }
+        50% { transform: scale(0.95); }
+        70% { transform: scale(1.05); }
+        100% { transform: scale(1); }
+      }
+
+      /* Timer ring glow when active */
+      .timer-ring-progress {
+        transition: stroke-dashoffset 1s linear;
+        filter: drop-shadow(0 0 6px var(--success));
+      }
+
+      /* Timer button animations */
+      .timer-btn {
+        transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.2s ease;
+      }
+
+      .timer-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 15px rgba(139, 115, 85, 0.3);
+      }
+
+      .timer-btn:active {
+        transform: translateY(1px) scale(0.98);
+        box-shadow: 0 2px 5px rgba(139, 115, 85, 0.2);
+      }
+
+      /* 4. BUTTON MICRO-INTERACTIONS */
+      .btn, .add-btn, .pdf-btn, .move-btn, .toggle-btn {
+        position: relative;
+        overflow: hidden;
+        transition: transform 0.15s cubic-bezier(0.68, -0.55, 0.265, 1.55), 
+                    box-shadow 0.15s ease,
+                    background 0.2s ease;
+      }
+
+      .btn:hover, .add-btn:hover, .pdf-btn:hover, .move-btn:hover {
+        transform: translateY(-2px);
+      }
+
+      .btn:active, .add-btn:active, .pdf-btn:active, .move-btn:active {
+        transform: translateY(1px) scale(0.97);
+      }
+
+      /* Ripple effect */
+      .btn::after, .add-btn::after, .pdf-btn::after, .move-btn::after, .toggle-btn::after {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 0;
+        height: 0;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.4);
+        transform: translate(-50%, -50%);
+        transition: width 0.4s ease, height 0.4s ease, opacity 0.4s ease;
+        opacity: 0;
+      }
+
+      .btn:active::after, .add-btn:active::after, .pdf-btn:active::after, 
+      .move-btn:active::after, .toggle-btn:active::after {
+        width: 200px;
+        height: 200px;
+        opacity: 0;
+        transition: 0s;
+      }
+
+      /* Squish effect for primary buttons */
+      .btn-primary:active, .btn-danger:active {
+        transform: scale(0.95) translateY(2px);
+      }
+
+      /* Delete button shake on hover */
+      .delete-btn:hover {
+        animation: shake 0.4s ease-in-out;
+      }
+
+      @keyframes shake {
+        0%, 100% { transform: translateX(0); }
+        20% { transform: translateX(-3px); }
+        40% { transform: translateX(3px); }
+        60% { transform: translateX(-2px); }
+        80% { transform: translateX(2px); }
+      }
+
+      /* 5. PAGE/VIEW TRANSITIONS */
+      .view {
+        display: none;
+        opacity: 0;
+        transform: translateX(20px);
+        transition: opacity 0.4s ease, transform 0.4s ease;
+      }
+
+      .view.active {
+        display: block;
+        opacity: 1;
+        transform: translateX(0);
+        animation: slideIn 0.4s ease-out;
+      }
+
+      @keyframes slideIn {
+        from {
+          opacity: 0;
+          transform: translateX(30px);
+        }
+        to {
+          opacity: 1;
+          transform: translateX(0);
+        }
+      }
+
+      /* Fade in for loaded content */
+      .card, .kanban-column, .chart-box {
+        animation: fadeInUp 0.5s ease-out;
+      }
+
+      @keyframes fadeInUp {
+        from {
+          opacity: 0;
+          transform: translateY(20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      /* Staggered animation for kanban columns */
+      .kanban-column:nth-child(1) { animation-delay: 0.1s; }
+      .kanban-column:nth-child(2) { animation-delay: 0.2s; }
+      .kanban-column:nth-child(3) { animation-delay: 0.3s; }
+
+      /* Toggle button active transition */
+      .toggle-btn {
+        transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+      }
+
+      .toggle-btn.active {
+        animation: bounceIn 0.4s ease;
+      }
+
+      @keyframes bounceIn {
+        0% { transform: scale(1); }
+        30% { transform: scale(1.1); }
+        50% { transform: scale(0.95); }
+        70% { transform: scale(1.03); }
+        100% { transform: scale(1); }
+      }
+
+      /* Modal entrance enhancement */
+      .modal-box {
+        animation: modalPopIn 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+      }
+
+      @keyframes modalPopIn {
+        from {
+          opacity: 0;
+          transform: scale(0.8) translateY(20px);
+        }
+        to {
+          opacity: 1;
+          transform: scale(1) translateY(0);
+        }
+      }
+
+      /* Session history item animation */
+      .session-item {
+        animation: slideInLeft 0.3s ease-out;
+      }
+
+      @keyframes slideInLeft {
+        from {
+          opacity: 0;
+          transform: translateX(-20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateX(0);
+        }
+      }
+
+      /* Habit cell interaction */
+      .cell {
+        transition: transform 0.2s cubic-bezier(0.68, -0.55, 0.265, 1.55), 
+                    box-shadow 0.2s ease,
+                    background 0.2s ease;
+      }
+
+      .cell:hover:not(.disabled) {
+        transform: scale(1.2);
+        box-shadow: 0 4px 12px rgba(139, 115, 85, 0.3);
+      }
+
+      .cell:active:not(.disabled) {
+        transform: scale(0.95);
+      }
+
+      /* Success celebration for completed cells */
+      .cell.done {
+        animation: completePop 0.4s ease-out;
+      }
+
+      @keyframes completePop {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.3); }
+        100% { transform: scale(1); }
+      }
+
+    </style>
+  </head>
+  <body>
+    <div class="toast-container" id="toasts"></div>
+
+    <header>
+      <div class="container">
+        <h1 style="display: flex; align-items: center; gap: 8px;">my habits <img src="/static/icons/icon_pencil.png" style="width: 24px; height: 24px;"></h1>
+
+        <!-- Cartoony Toggle Buttons -->
+        <div class="view-toggle">
+          <button
+            class="toggle-btn active"
+            id="habits-toggle"
+            onclick="switchView('habits')"
+          >
+            <img
+              src="/static/icons/icon_habits.png"
+              class="icon"
+              alt="Habits"
+            />
+            Habits
+          </button>
+          <button
+            class="toggle-btn"
+            id="kanban-toggle"
+            onclick="switchView('kanban')"
+          >
+            <img src="/static/icons/icon_tasks.png" class="icon" alt="Tasks" />
+            Tasks
+          </button>
+          <button
+            class="toggle-btn"
+            id="focus-toggle"
+            onclick="switchView('focus')"
+          >
+            <img src="/static/icons/icon_focus.png" class="icon" alt="Focus" />
+            Focus
+          </button>
+        </div>
+
+        <div
+          class="header-actions"
+          style="display: flex; align-items: center; gap: 12px"
+        >
+          <button class="add-btn" id="main-add-btn" onclick="handleAddClick()">
+            <img
+              src="/static/icons/icon_add.png"
+              class="icon"
+              style="width: 16px; height: 16px; margin-right: 4px"
+            />
+            new
+          </button>
+          
+          <!-- Coffee Theme Toggle -->
+          <label class="coffee-toggle-nav" title="Toggle Theme">
+            <input type="checkbox" id="theme-toggle" onchange="toggleTheme()">
+            <span class="coffee-cup-nav">
+              <span class="coffee-liquid-nav"></span>
+            </span>
+          </label>
+          
+          <img
+            src="/static/icons/icon_settings_custom.png"
+            class="icon settings-trigger"
+            style="cursor: pointer; width: 28px; height: 28px"
+            onclick="openIconSettings()"
+            title="App Settings"
+          />
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <!-- ===== HABITS VIEW ===== -->
+      <div id="habits-view" class="view active">
+        <div class="week-nav">
+          <button onclick="navWeek(-1)"><img src="/static/icons/icon_arrow_left.png" style="width: 32px; height: 32px;"></button>
+          <span class="week-label" id="week-label">...</span>
+          <button onclick="navWeek(1)"><img src="/static/icons/icon_arrow_right.png" style="width: 32px; height: 32px;"></button>
+        </div>
+
+        <div class="card">
+          <table>
+            <thead>
+              <tr>
+                <th style="width: 35%">habit</th>
+                <th id="h0">Sun</th>
+                <th id="h1">Mon</th>
+                <th id="h2">Tue</th>
+                <th id="h3">Wed</th>
+                <th id="h4">Thu</th>
+                <th id="h5">Fri</th>
+                <th id="h6">Sat</th>
+                <th style="width: 40px"></th>
+              </tr>
+            </thead>
+            <tbody id="tbody"></tbody>
+          </table>
+          <div id="empty" class="empty hidden">
+            <h3>no habits yet!</h3>
+            <p>add your first habit to get started</p>
+            <button class="btn btn-primary" onclick="openAddModal()">
+              + add habit
+            </button>
+          </div>
+        </div>
+
+        <div class="charts">
+          <div class="chart-box">
+            <h3>this week</h3>
+            <canvas id="chart1" height="160"></canvas>
+          </div>
+          <div class="chart-box">
+            <h3>last 4 weeks</h3>
+            <canvas id="chart2" height="160"></canvas>
+          </div>
+        </div>
+
+        <button class="pdf-btn" onclick="downloadPDF()">
+          <img src="/static/icons/icon_document.png" style="width: 28px; height: 28px; vertical-align: middle; margin-right: 8px;"> download report
+        </button>
+      </div>
+
+      <!-- ===== KANBAN VIEW ===== -->
+      <div id="kanban-view" class="view">
+        <div class="kanban-header">
+          <span class="kanban-title">
+            <img src="/static/icons/icon_tasks.png" class="icon" alt="Tasks" />
+            my tasks
+          </span>
+        </div>
+
+        <div class="kanban-board">
+          <div class="kanban-column" id="col-todo">
+            <div class="column-header">
+              <span class="column-title">
+                <img
+                  src="/static/icons/icon_todo.png"
+                  class="icon"
+                  alt="To Do"
+                  style="width: 80px !important; height: 80px !important;"
+                />
+                To Do
+              </span>
+              <span class="column-count" id="count-todo">0</span>
+            </div>
+            <div class="kanban-items" id="items-todo"></div>
+          </div>
+
+          <div class="kanban-column" id="col-progress">
+            <div class="column-header">
+              <span class="column-title">
+                <img
+                  src="/static/icons/icon_progress.png"
+                  class="icon"
+                  alt="In Progress"
+                  style="width: 80px !important; height: 80px !important;"
+                />
+                In Progress
+              </span>
+              <span class="column-count" id="count-progress">0</span>
+            </div>
+            <div class="kanban-items" id="items-progress"></div>
+          </div>
+
+          <div class="kanban-column" id="col-done">
+            <div class="column-header">
+              <span class="column-title">
+                <img
+                  src="/static/icons/icon_done.png"
+                  class="icon"
+                  alt="Done"
+                  style="width: 80px !important; height: 80px !important;"
+                />
+                Done
+              </span>
+              <span class="column-count" id="count-done">0</span>
+            </div>
+            <div class="kanban-items" id="items-done"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== FOCUS VIEW ===== -->
+      <div id="focus-view" class="view">
+        <div class="focus-layout" style="display: flex; gap: 1.5rem; max-width: 900px; margin: 0 auto; align-items: flex-start;">
+          
+          <!-- Left Panel: Task Queue (Collapsible) -->
+          <div class="task-queue-panel" id="task-queue-panel" style="
+            min-width: 220px;
+            max-width: 280px;
+            background: var(--paper);
+            border-radius: 12px;
+            padding: 0.75rem;
+            border: 1px solid var(--tan-light);
+            flex-shrink: 0;
+            transition: all 0.3s ease;
+          ">
+            <h4 style="font-family: 'Caveat', cursive; font-size: 1.3rem; color: var(--brown-dark); margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
+              <img src="/static/icons/icon_rock_lee.png" class="icon" style="width: 24px; height: 24px;" alt=""/>
+              Focus Queue
+            </h4>
+
+            <!-- Queue List -->
+            <div id="task-queue-list" style="max-height: 300px; overflow-y: auto; margin-bottom: 0.75rem;">
+              <!-- Tasks render here -->
+            </div>
+
+            <!-- Action Buttons -->
+            <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+              <button 
+                class="timer-btn" 
+                onclick="openLinkTaskModal()"
+                style="width: 100%; font-size: 0.85rem; padding: 0.6rem;"
+              >
+                <img src="/static/icons/icon_add.png" class="icon" style="width: 16px; height: 16px; margin-right: 4px" />
+                Add from Tasks
+              </button>
+              <button 
+                class="timer-btn" 
+                onclick="openQuickAddModal()"
+                style="width: 100%; font-size: 0.85rem; padding: 0.6rem;"
+              >
+                <img src="/static/icons/icon_pencil.png" style="width: 24px; height: 24px; vertical-align: middle; margin-right: 6px;"> Create New Task
+              </button>
+            </div>
+          </div>
+
+          <!-- Right Panel: Timer -->
+          <div
+            class="focus-container"
+            style="flex: 1; max-width: 500px; position: relative"
+          >
+            <button
+            class="settings-icon"
+            onclick="openTimerSettings()"
+            title="Timer settings"
+          >
+            <img src="/static/icons/icon_settings_custom.png" style="width: 28px; height: 28px;">
+          </button>
+
+          <!-- Timer Circle -->
+          <div class="timer-circle">
+            <svg width="200" height="200">
+              <circle class="timer-ring-bg" cx="100" cy="100" r="90" />
+              <circle
+                class="timer-ring"
+                id="timer-ring"
+                cx="100"
+                cy="100"
+                r="90"
+              />
+            </svg>
+            <div class="timer-display" id="timer-display">25:00</div>
+          </div>
+
+          <!-- Controls -->
+          <div class="timer-controls">
+            <button class="timer-btn" id="start-btn" onclick="startTimer()">
+              <img
+                src="/static/icons/icon_play.png"
+                class="icon"
+                style="
+                  width: 24px;
+                  height: 24px;
+                  margin-right: 4px;
+                "
+              />
+              Start
+            </button>
+            <button
+              class="timer-btn hidden"
+              id="pause-btn"
+              onclick="pauseTimer()"
+            >
+              <img
+                src="/static/icons/icon_pause.png"
+                class="icon"
+                style="
+                  width: 16px;
+                  height: 16px;
+                  margin-right: 4px;
+                  filter: brightness(0) invert(1);
+                "
+              />
+              Pause
+            </button>
+            <button
+              class="timer-btn hidden"
+              id="done-btn"
+              onclick="markSessionDone()"
+              style="background: var(--success);"
+            >
+              <img src="/static/icons/icon_done.png" style="width: 16px; height: 16px; vertical-align: middle; margin-right: 4px; filter: brightness(0) invert(1);"> Done
+            </button>
+            <button class="timer-btn secondary" onclick="resetTimer()">
+              <img
+                src="/static/icons/icon_reset.png"
+                class="icon"
+                style="width: 16px; height: 16px; margin-right: 4px"
+              />
+              Reset
+            </button>
+          </div>
+
+          <!-- Stats -->
+          <div class="focus-stats">
+            <div class="focus-stat-box">
+              <div class="focus-stat-value" id="today-hours">0h</div>
+              <div class="focus-stat-label">today</div>
+            </div>
+            <div class="focus-stat-box">
+              <div class="focus-stat-value" id="week-hours">0h</div>
+              <div class="focus-stat-label">this week</div>
+            </div>
+            <div class="focus-stat-box">
+              <div class="focus-stat-value" id="focus-streak">0 days</div>
+              <div class="focus-stat-label">streak</div>
+            </div>
+          </div>
+
+          <!-- Focus Status Box -->
+          <div id="motivation-box" class="motivation-box">
+            <div class="motivation-content">
+              <h4 style="font-family: 'Caveat', cursive; font-size: 1.4rem; color: var(--brown-dark); text-align: center; margin-bottom: 0.5rem; padding-bottom: 0.5rem; border-bottom: 2px dashed var(--tan-light);">
+                <img src="/static/icons/icon_sparkles.png" style="width: 36px; height: 36px; vertical-align: middle; margin-right: 8px;"> Focus Status
+              </h4>
+              <img id="motivation-image" src="/static/icons/icon_rock_lee_sleepy.png" alt="Motivation Level" style="width: 80px; height: 80px; object-fit: contain; margin: 10px 0;">
+              <div id="motivation-text" style="font-size: 1.1rem; font-weight: bold; color: var(--brown);">Time to focus! Start a session!</div>
+            </div>
+          </div>
+
+          <!-- Session History -->
+          <div class="session-history">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+              <h4 style="margin: 0; display: flex; align-items: center; gap: 8px;"><img src="/static/icons/icon_scroll.png" style="width: 36px; height: 36px;"> today's sessions</h4>
+              <button onclick="confirmClearSessions()" style="background: none; border: none; cursor: pointer; color: var(--brown); font-size: 0.8rem; text-decoration: underline;">
+                Clear
+              </button>
+            </div>
+            <div id="session-history"></div>
+          </div>
+        </div>
+        </div><!-- Close focus-layout -->
+      </div>
+    </main>
+
+    <!-- ===== HABIT MODALS ===== -->
+
+    <!-- Add/Edit Habit Modal -->
+    <div id="task-modal" class="modal">
+      <div class="modal-bg" onclick="closeModal('task-modal')"></div>
+      <div class="modal-box">
+        <div class="modal-header">
+          <h2 id="modal-title">new habit</h2>
+          <button class="close-btn" onclick="closeModal('task-modal')">
+            <img src="/static/icons/icon_cross.png" style="width: 14px; height: 14px;">
+          </button>
+        </div>
+        <form id="task-form" class="modal-body">
+          <input type="hidden" id="task-id" />
+          <div class="form-group">
+            <label>what habit?</label>
+            <input
+              type="text"
+              id="task-name"
+              required
+              placeholder="e.g., read for 30 minutes"
+            />
+          </div>
+          <div class="form-group">
+            <label>how to measure?</label>
+            <select id="metric-type" onchange="toggleUnit()">
+              <option value="BOOLEAN">✓ simple check</option>
+              <option value="TIME">⏱ time</option>
+              <option value="COUNT">🔢 count</option>
+              <option value="INTENSITY">🔥 intensity (1-10)</option>
+              <option value="PROGRESS">📊 progress %</option>
+            </select>
+          </div>
+          <div class="form-group hidden" id="unit-group">
+            <label>unit</label>
+            <input
+              type="text"
+              id="metric-unit"
+              placeholder="e.g., minutes, pages"
+            />
+          </div>
+          <div class="form-group">
+            <label>target (optional)</label>
+            <input type="number" id="target-value" placeholder="e.g., 30" />
+          </div>
+          <div class="form-group">
+            <label>how often?</label>
+            <select id="frequency">
+              <option value="DAILY">every day</option>
+              <option value="WEEKDAYS">weekdays</option>
+              <option value="WEEKENDS">weekends</option>
+            </select>
+          </div>
+          <div class="btn-row">
+            <button
+              type="button"
+              class="btn btn-cancel"
+              onclick="closeModal('task-modal')"
+            >
+              cancel
+            </button>
+            <button type="submit" class="btn btn-primary">save</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Progress Modal -->
+    <div id="prog-modal" class="modal">
+      <div class="modal-bg" onclick="closeModal('prog-modal')"></div>
+      <div class="modal-box">
+        <div class="modal-header">
+          <h2>log progress</h2>
+          <button class="close-btn" onclick="closeModal('prog-modal')">
+            <img src="/static/icons/icon_cross.png" style="width: 14px; height: 14px;">
+          </button>
+        </div>
+        <form id="prog-form" class="modal-body">
+          <input type="hidden" id="prog-tid" />
+          <input type="hidden" id="prog-date" />
+          <div style="text-align: center; margin-bottom: 1rem">
+            <div
+              class="handwritten"
+              style="font-size: 1.4rem; color: var(--brown-dark)"
+              id="prog-name"
+            >
+              habit
+            </div>
+            <div
+              style="font-size: 0.85rem; color: var(--brown)"
+              id="prog-date-label"
+            >
+              date
+            </div>
+          </div>
+          <div id="prog-input"></div>
+          <div class="form-group">
+            <label>notes</label>
+            <textarea
+              id="prog-notes"
+              rows="2"
+              placeholder="how did it go?"
+            ></textarea>
+          </div>
+          <div class="btn-row">
+            <button
+              type="button"
+              class="btn btn-cancel"
+              onclick="closeModal('prog-modal')"
+            >
+              cancel
+            </button>
+            <button type="submit" class="btn btn-primary">done <img src="/static/icons/icon_done.png" style="width: 14px; height: 14px; vertical-align: middle; margin-left: 4px;"></button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Task Detail Modal -->
+    <div id="detail-modal" class="modal">
+      <div class="modal-bg" onclick="closeModal('detail-modal')"></div>
+      <div class="modal-box">
+        <div class="modal-header">
+          <h2 id="detail-title">habit details</h2>
+          <button class="close-btn" onclick="closeModal('detail-modal')">
+            <img src="/static/icons/icon_cross.png" style="width: 14px; height: 14px;">
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="stat-grid">
+            <div class="stat-box">
+              <div class="value" id="stat-health">-</div>
+              <div class="label">health</div>
+            </div>
+            <div class="stat-box">
+              <div class="value" id="stat-streak">-</div>
+              <div class="label">streak</div>
+            </div>
+            <div class="stat-box">
+              <div class="value" id="stat-total">-</div>
+              <div class="label">total done</div>
+            </div>
+            <div class="stat-box">
+              <div class="value" id="stat-avg">-</div>
+              <div class="label">average</div>
+            </div>
+          </div>
+          <canvas id="detail-chart" height="150"></canvas>
+          <div class="btn-row" style="margin-top: 1.5rem">
+            <button class="btn btn-cancel" onclick="closeModal('detail-modal')">
+              close
+            </button>
+            <button class="btn btn-primary" onclick="editCurrentTask()">
+              edit
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Delete Habit Modal -->
+    <div id="del-modal" class="modal">
+      <div class="modal-bg" onclick="closeModal('del-modal')"></div>
+      <div class="modal-box" style="text-align: center">
+        <div class="modal-body">
+          <div style="font-size: 3rem; margin-bottom: 0.5rem"><img src="/static/icons/icon_trash.png" style="width: 48px; height: 48px;"></div>
+          <h2
+            class="handwritten"
+            style="
+              font-size: 1.5rem;
+              color: var(--brown-dark);
+              margin-bottom: 0.5rem;
+            "
+          >
+            delete habit?
+          </h2>
+          <p
+            style="color: var(--brown); margin-bottom: 1.5rem"
+            id="del-name"
+          ></p>
+          <input type="hidden" id="del-id" />
+          <button
+            class="btn btn-danger"
+            style="width: 100%; margin-bottom: 0.5rem"
+            onclick="doDelete(true)"
+          >
+            delete forever
+          </button>
+          <button
+            class="btn btn-cancel"
+            style="width: 100%; margin-bottom: 0.5rem"
+            onclick="doDelete(false)"
+          >
+            archive
+          </button>
+          <button
+            class="btn"
+            style="width: 100%; background: transparent; color: var(--brown)"
+            onclick="closeModal('del-modal')"
+          >
+            cancel
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== KANBAN MODALS ===== -->
+
+    <!-- Add/Edit Kanban Item Modal -->
+    <div id="kanban-modal" class="modal">
+      <div class="modal-bg" onclick="closeModal('kanban-modal')"></div>
+      <div class="modal-box">
+        <div class="modal-header">
+          <h2 id="kanban-modal-title">new task</h2>
+          <button class="close-btn" onclick="closeModal('kanban-modal')">
+            <img src="/static/icons/icon_cross.png" style="width: 14px; height: 14px;">
+          </button>
+        </div>
+        <form id="kanban-form" class="modal-body">
+          <input type="hidden" id="kanban-id" />
+          <div class="form-group">
+            <label>what needs to be done?</label>
+            <input
+              type="text"
+              id="kanban-title"
+              required
+              placeholder="e.g., finish report"
+            />
+          </div>
+          <div class="form-group">
+            <label>description (optional)</label>
+            <textarea
+              id="kanban-desc"
+              rows="2"
+              placeholder="any details..."
+            ></textarea>
+          </div>
+          <div class="form-group">
+            <label>due date</label>
+            <input type="date" id="kanban-date" required />
+          </div>
+          <div class="btn-row">
+            <button
+              type="button"
+              class="btn btn-cancel"
+              onclick="closeModal('kanban-modal')"
+            >
+              cancel
+            </button>
+            <button type="submit" class="btn btn-primary">save</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Delete Kanban Item Modal -->
+    <div id="kanban-del-modal" class="modal">
+      <div class="modal-bg" onclick="closeModal('kanban-del-modal')"></div>
+      <div class="modal-box" style="text-align: center">
+        <div class="modal-body">
+          <div style="font-size: 3rem; margin-bottom: 0.5rem"><img src="/static/icons/icon_trash.png" style="width: 48px; height: 48px;"></div>
+          <h2
+            class="handwritten"
+            style="
+              font-size: 1.5rem;
+              color: var(--brown-dark);
+              margin-bottom: 0.5rem;
+            "
+          >
+            delete task?
+          </h2>
+          <p
+            style="color: var(--brown); margin-bottom: 1.5rem"
+            id="kanban-del-name"
+          ></p>
+          <input type="hidden" id="kanban-del-id" />
+          <button
+            class="btn btn-danger"
+            style="width: 100%; margin-bottom: 0.5rem"
+            onclick="doKanbanDelete()"
+          >
+            delete
+          </button>
+          <button
+            class="btn"
+            style="width: 100%; background: transparent; color: var(--brown)"
+            onclick="closeModal('kanban-del-modal')"
+          >
+            cancel
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== FOCUS MODALS ===== -->
+
+    <!-- Timer Settings Modal -->
+    <div id="timer-settings-modal" class="modal">
+      <div class="modal-bg" onclick="closeModal('timer-settings-modal')"></div>
+      <div class="modal-box">
+        <div class="modal-header">
+          <h2 style="display: flex; align-items: center; gap: 8px;"><img src="/static/icons/icon_stopwatch.png" style="width: 24px; height: 24px;"> timer settings</h2>
+          <button
+            class="close-btn"
+            onclick="closeModal('timer-settings-modal')"
+          >
+            <img src="/static/icons/icon_cross.png" style="width: 14px; height: 14px;">
+          </button>
+        </div>
+        <div class="modal-body">
+          <p style="color: var(--brown); margin-bottom: 1rem">
+            Choose focus duration:
+          </p>
+          <div class="duration-options">
+            <button
+              class="duration-btn"
+              data-mins="15"
+              onclick="setTimerDuration(15)"
+            >
+              15 min
+            </button>
+            <button
+              class="duration-btn active"
+              data-mins="25"
+              onclick="setTimerDuration(25)"
+            >
+              25 min
+            </button>
+            <button
+              class="duration-btn"
+              data-mins="45"
+              onclick="setTimerDuration(45)"
+            >
+              45 min
+            </button>
+            <button
+              class="duration-btn"
+              data-mins="60"
+              onclick="setTimerDuration(60)"
+            >
+              60 min
+            </button>
+            <button
+              class="duration-btn"
+              data-mins="90"
+              onclick="setTimerDuration(90)"
+            >
+              90 min
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- App Settings Modal -->
+  <div id="app-settings-modal" class="modal">
+    <div class="modal-bg" onclick="closeIconSettings()"></div>
+    <div class="modal-box" style="max-width: 380px;">
+      <div class="modal-header">
+        <h2 style="font-family: 'Caveat', cursive; font-size: 1.6rem;">
+          <img src="/static/icons/icon_settings_custom.png" style="width: 36px; height: 36px; vertical-align: middle; margin-right: 8px;"> App Settings
+        </h2>
+        <button class="close-btn" onclick="closeIconSettings()"><img src="/static/icons/icon_cross.png" style="width: 24px; height: 24px;"></button>
+      </div>
+      <div class="modal-body" style="padding: 1.5rem;">
+        <!-- Icon Sizer Section -->
+        <div style="background: var(--cream); border-radius: 12px; padding: 1rem; border: 1px solid var(--tan-light);">
+          <label style="font-family: 'Caveat', cursive; font-size: 1.2rem; color: var(--brown-dark); display: block; margin-bottom: 0.75rem;">
+            <img src="/static/icons/icon_palette.png" style="width: 32px; height: 32px; vertical-align: middle; margin-right: 8px;"> Icon Size
+          </label>
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <span style="font-size: 0.85rem; color: var(--brown);">Small</span>
+            <input type="range" id="icon-size-slider" min="16" max="48" value="24" 
+                   oninput="updateIconSize(this.value)"
+                   style="flex: 1; accent-color: var(--tan-dark);">
+            <span style="font-size: 0.85rem; color: var(--brown);">Large</span>
+          </div>
+          <p style="font-size: 0.8rem; color: var(--tan-dark); margin-top: 0.5rem; text-align: center;">
+            Adjust the size of all icons across the app
+          </p>
+        </div>
+        
+        <!-- Done Button -->
+        <div style="margin-top: 1.5rem;">
+          <button class="timer-btn" onclick="closeIconSettings()" style="width: 100%;">
+            <img src="/static/icons/icon_done.png" class="icon" style="width: 16px; height: 16px; margin-right: 4px;"> Done
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+    <!-- Link Task Modal -->
+    <div id="link-task-modal" class="modal">
+      <div class="modal-bg" onclick="closeModal('link-task-modal')"></div>
+      <div class="modal-box">
+        <div class="modal-header">
+          <h2 style="display: flex; align-items: center; gap: 8px;"><img src="/static/icons/icon_link.png" style="width: 24px; height: 24px;"> link a task</h2>
+          <button class="close-btn" onclick="closeModal('link-task-modal')">
+            <img src="/static/icons/icon_cross.png" style="width: 16px; height: 16px;">
+          </button>
+        </div>
+        <div class="modal-body">
+          <p style="color: var(--brown); margin-bottom: 1rem">
+            Select a task to focus on:
+          </p>
+          <div class="linkable-tasks" id="linkable-tasks"></div>
+          <button
+            class="btn btn-cancel"
+            style="width: 100%; margin-top: 1rem"
+            onclick="closeModal('link-task-modal')"
+          >
+            cancel
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick Add Task Modal -->
+    <div id="quick-add-modal" class="modal">
+      <div class="modal-bg" onclick="closeModal('quick-add-modal')"></div>
+      <div class="modal-box">
+        <div class="modal-header">
+          <h3>
+             <img src="/static/icons/icon_pencil.png" style="width: 20px; height: 20px; margin-right: 6px;"> Quick Add Task
+          </h3>
+          <button class="close-btn" onclick="closeModal('quick-add-modal')">
+            <img src="/static/icons/icon_cross.png" style="width: 16px; height: 16px;">
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label>What needs to be done?</label>
+            <input type="text" id="quick-task-title" placeholder="e.g., Review Chapter 5" required />
+          </div>
+          <div class="form-group">
+            <label>Sessions needed</label>
+            <div style="display: flex; align-items: center; gap: 1rem;">
+              <button class="btn" onclick="adjustQuickSessions(-1)" style="padding: 0.5rem 1rem;"><img src="/static/icons/icon_minus.png" style="width: 14px; height: 14px;"></button>
+              <span id="quick-session-count" style="font-size: 1.5rem; font-family: 'Caveat', cursive; color: var(--brown-dark); min-width: 40px; text-align: center;">1</span>
+              <button class="btn" onclick="adjustQuickSessions(1)" style="padding: 0.5rem 1rem;">+</button>
+            </div>
+          </div>
+          <button class="btn btn-primary" style="width: 100%; margin-top: 1rem;" onclick="quickAddTask()">Add to Queue</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Session Count Modal -->
+    <div id="session-count-modal" class="modal">
+      <div class="modal-bg" onclick="closeModal('session-count-modal')"></div>
+      <div class="modal-box" style="text-align: center;">
+        <div class="modal-header">
+          <h3>How many sessions?</h3>
+          <button class="close-btn" onclick="closeModal('session-count-modal')"><img src="/static/icons/icon_cross.png" style="width: 14px; height: 14px;"></button>
+        </div>
+        <div class="modal-body">
+          <p style="color: var(--brown); margin-bottom: 1rem;" id="session-task-name">Task Name</p>
+          <div style="display: flex; align-items: center; justify-content: center; gap: 1rem; margin-bottom: 1rem;">
+            <button class="btn" onclick="adjustSessionCount(-1)" style="padding: 0.5rem 1rem; font-size: 1.2rem;"><img src="/static/icons/icon_minus.png" style="width: 14px; height: 14px;"></button>
+            <span id="session-count-display" style="font-size: 2rem; font-family: 'Caveat', cursive; color: var(--brown-dark); min-width: 60px;">1</span>
+            <button class="btn" onclick="adjustSessionCount(1)" style="padding: 0.5rem 1rem; font-size: 1.2rem;">+</button>
+          </div>
+          <p style="font-size: 0.9rem; color: var(--tan-dark);">sessions (~25 min each)</p>
+          <button class="btn btn-primary" style="width: 100%; margin-top: 1rem;" onclick="confirmAddToQueue()">Add to Queue</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- More Sessions Modal -->
+    <div id="more-sessions-modal" class="modal">
+      <div class="modal-bg" onclick="closeModal('more-sessions-modal')"></div>
+      <div class="modal-box" style="text-align: center;">
+        <div class="modal-header">
+          <h3 style="display: flex; align-items: center; gap: 8px;"><img src="/static/icons/icon_calendar.png" style="width: 24px; height: 24px;"> Sessions Complete!</h3>
+          <button class="close-btn" onclick="closeModal('more-sessions-modal')"><img src="/static/icons/icon_cross.png" style="width: 14px; height: 14px;"></button>
+        </div>
+        <div class="modal-body">
+          <p style="color: var(--brown); margin-bottom: 1rem;" id="completed-task-name">Task Name</p>
+          <p style="font-size: 1.1rem; margin-bottom: 1.5rem;">Need more sessions?</p>
+          <div style="display: flex; gap: 0.5rem;">
+            <button class="btn btn-cancel" style="flex: 1;" onclick="removeFromQueue()">No, I'm done</button>
+            <button class="btn btn-primary" style="flex: 1;" onclick="promptMoreSessions()">Yes, add more</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // ===== STATE =====
+      let currentView = "habits";
+      let weekStart = getCurrentWeekStart();
+      let weekData = null;
+      let currentTask = null;
+      let kanbanData = null;
+      let currentKanbanItem = null;
+      let chart1 = null,
+        chart2 = null,
+        detailChart = null;
+
+      /* ===== ICON SETTINGS ===== */
+      function openIconSettings() {
+          const modal = document.getElementById('app-settings-modal');
+          if(modal) {
+              modal.classList.add('active');
+              // Load current size
+              const savedSize = localStorage.getItem('iconSize') || 24;
+              const slider = document.getElementById('icon-size-slider');
+              if(slider) slider.value = savedSize;
+          } else {
+              console.error("Modal not found!");
+          }
+      }
+
+      function closeIconSettings() {
+          const modal = document.getElementById('app-settings-modal');
+          if(modal) modal.classList.remove('active');
+      }
+
+      function updateIconSize(size) {
+          document.documentElement.style.setProperty('--icon-size-base', size + 'px');
+          localStorage.setItem('iconSize', size);
+      }
+
+      // Toggle theme between light (milky) and dark (mocha)
+      function toggleTheme() {
+          const html = document.documentElement;
+          const isDark = html.getAttribute('data-theme') === 'dark';
+          
+          if (isDark) {
+              html.removeAttribute('data-theme');
+              localStorage.setItem('theme', 'light');
+          } else {
+              html.setAttribute('data-theme', 'dark');
+              localStorage.setItem('theme', 'dark');
+          }
+          
+          // Update checkbox state
+          const toggle = document.getElementById('theme-toggle');
+          if (toggle) {
+              toggle.checked = !isDark;
+          }
+      }
+
+      // Initialize icon size and theme
+      document.addEventListener('DOMContentLoaded', () => {
+          // Load saved icon size
+          const savedSize = localStorage.getItem('iconSize') || 24;
+          document.documentElement.style.setProperty('--icon-size-base', savedSize + 'px');
+          
+          // Load saved theme
+          const savedTheme = localStorage.getItem('theme');
+          if (savedTheme === 'dark') {
+              document.documentElement.setAttribute('data-theme', 'dark');
+              const toggle = document.getElementById('theme-toggle');
+              if (toggle) toggle.checked = true;
+          }
+          
+          // Also check system preference if no saved theme
+          if (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+              document.documentElement.setAttribute('data-theme', 'dark');
+              const toggle = document.getElementById('theme-toggle');
+              if (toggle) toggle.checked = true;
+          }
+      });
+      
+      // Pomodoro state
+      let pomodoroState = {
+        isRunning: false,
+        timeLeft: 25 * 60,
+        duration: 25,
+        sessionId: null,
+        linkedTaskId: null,
+        linkedTaskTitle: null,
+        interval: null,
+      };
+
+      // Task Queue state
+      let taskQueue = []; // [{taskId, taskTitle, totalSessions, completedSessions}]
+      let pendingTask = null; // Task waiting to be added to queue
+      let sessionCountInput = 1; // Session count input value
+
+      // ===== TASK QUEUE FUNCTIONS =====
+      function adjustSessionCount(delta) {
+        sessionCountInput = Math.max(1, Math.min(10, sessionCountInput + delta));
+        document.getElementById('session-count-display').textContent = sessionCountInput;
+      }
+
+      function openSessionCountModal(taskId, taskTitle) {
+        pendingTask = { taskId, taskTitle };
+        sessionCountInput = 1;
+        document.getElementById('session-count-display').textContent = '1';
+        document.getElementById('session-task-name').textContent = taskTitle;
+        openModal('session-count-modal');
+      }
+
+      async function confirmAddToQueue() {
+        if (!pendingTask) return;
+        
+        // Auto-move task to "doing" (in-progress) column
+        try {
+          await fetch(`/api/kanban/${pendingTask.taskId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: 'doing' })
+          });
+        } catch (e) {
+          console.log('Could not move task to in-progress:', e);
+        }
+        
+        // Check if task already in queue
+        const existing = taskQueue.find(t => t.taskId === pendingTask.taskId);
+        if (existing) {
+          existing.totalSessions += sessionCountInput;
+        } else {
+          taskQueue.push({
+            taskId: pendingTask.taskId,
+            taskTitle: pendingTask.taskTitle,
+            totalSessions: sessionCountInput,
+            completedSessions: 0
+          });
+        }
+        
+        renderTaskQueue();
+        closeModal('session-count-modal');
+        pendingTask = null;
+        
+        // Auto-select first task if none selected
+        if (!pomodoroState.linkedTaskId && taskQueue.length > 0) {
+          selectQueueTask(0);
+        }
+      }
+
+      // Quick Add Task functions
+      let quickSessionCount = 1;
+
+      function openQuickAddModal() {
+        quickSessionCount = 1;
+        document.getElementById('quick-session-count').textContent = '1';
+        document.getElementById('quick-task-title').value = '';
+        openModal('quick-add-modal');
+      }
+
+      function adjustQuickSessions(delta) {
+        quickSessionCount = Math.max(1, Math.min(10, quickSessionCount + delta));
+        document.getElementById('quick-session-count').textContent = quickSessionCount;
+      }
+
+      async function quickAddTask() {
+        const title = document.getElementById('quick-task-title').value.trim();
+        if (!title) {
+          toast('Please enter a task title', 'error');
+          return;
+        }
+
+        try {
+          // Create task directly in "doing" column
+          const r = await fetch('/api/kanban', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              title: title,
+              status: 'doing',
+              description: '',
+              due_date: new Date().toISOString().split('T')[0]
+            })
+          });
+          const data = await r.json();
+          
+          // Add to queue
+          taskQueue.push({
+            taskId: data.item.id,
+            taskTitle: title,
+            totalSessions: quickSessionCount,
+            completedSessions: 0
+          });
+          
+          renderTaskQueue();
+          closeModal('quick-add-modal');
+          
+          // Auto-select if first task
+          if (taskQueue.length === 1) {
+            selectQueueTask(0);
+          }
+          
+          toast('Task added to queue!', 'success');
+        } catch (e) {
+          console.error('Failed to create task:', e);
+          toast('Failed to create task', 'error');
+        }
+      }
+
+      function renderTaskQueue() {
+        const container = document.getElementById('task-queue-list');
+        if (taskQueue.length === 0) {
+          container.innerHTML = `
+            <div style="text-align: center; color: var(--tan-dark); padding: 1rem 0; font-size: 0.85rem;">
+              <p>No tasks queued yet</p>
+            </div>
+          `;
+          return;
+        }
+        
+        container.innerHTML = taskQueue.map((task, idx) => {
+          const isActive = pomodoroState.linkedTaskId === task.taskId;
+          const progress = task.totalSessions > 0 ? Math.round((task.completedSessions / task.totalSessions) * 100) : 0;
+          return `
+            <div class="queue-item" style="
+              display: flex;
+              align-items: center;
+              gap: 0.5rem;
+              padding: 0.5rem;
+              background: ${isActive ? 'var(--tan-light)' : 'var(--cream)'};
+              border: ${isActive ? '2px solid var(--tan-dark)' : '1px solid var(--tan-light)'};
+              border-radius: 8px;
+              margin-bottom: 0.4rem;
+              cursor: pointer;
+              transition: all 0.2s;
+            " onclick="selectQueueTask(${idx})">
+              ${isActive ? '<span style="color: var(--success); font-size: 1.1rem;">▶</span>' : ''}
+              <div style="flex: 1; min-width: 0;">
+                <div style="font-weight: ${isActive ? '600' : '500'}; color: var(--brown-dark); font-size: 0.85rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${task.taskTitle}</div>
+                <div style="font-size: 0.75rem; color: var(--tan-dark);">
+                  ${task.completedSessions}/${task.totalSessions} · ${progress}%
+                </div>
+              </div>
+              <button onclick="event.stopPropagation(); removeQueueItem(${idx})" style="
+                background: none;
+                border: none;
+                cursor: pointer;
+                color: var(--brown);
+                font-size: 1rem;
+                padding: 0.25rem;
+              "><img src="/static/icons/icon_cross.png" style="width: 12px; height: 12px;"></button>
+            </div>
+          `;
+        }).join('');
+      }
+
+      function selectQueueTask(idx) {
+        if (idx < 0 || idx >= taskQueue.length) return;
+        const task = taskQueue[idx];
+        pomodoroState.linkedTaskId = task.taskId;
+        pomodoroState.linkedTaskTitle = task.taskTitle;
+        renderTaskQueue();
+      }
+
+      function removeQueueItem(idx) {
+        taskQueue.splice(idx, 1);
+        if (taskQueue.length === 0) {
+          unlinkTask();
+        } else if (idx === 0 || pomodoroState.linkedTaskId === taskQueue[idx]?.taskId) {
+          selectQueueTask(0);
+        }
+        renderTaskQueue();
+      }
+
+      async function markSessionDone() {
+        // Record the focus session via backend
+        if (pomodoroState.sessionId) {
+          try {
+            await fetch(`/api/focus/complete/${pomodoroState.sessionId}`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ notes: 'Completed via Done button' })
+            });
+          } catch (e) {
+            console.error('Failed to record session:', e);
+          }
+        } else {
+          // If no session was started, create and complete one
+          try {
+            const r = await fetch('/api/focus/start', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                duration_minutes: pomodoroState.duration,
+                kanban_item_id: pomodoroState.linkedTaskId
+              })
+            });
+            const data = await r.json();
+            if (data.session && data.session.id) {
+              await fetch(`/api/focus/complete/${data.session.id}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ notes: 'Manual session via Done button' })
+              });
+            }
+          } catch (e) {
+            console.error('Failed to create session:', e);
+          }
+        }
+
+        // Find current task in queue and update progress
+        const task = taskQueue.find(t => t.taskId === pomodoroState.linkedTaskId);
+        if (task) {
+          task.completedSessions++;
+          
+          // Check if all sessions complete
+          if (task.completedSessions >= task.totalSessions) {
+            document.getElementById('completed-task-name').textContent = task.taskTitle;
+            openModal('more-sessions-modal');
+          }
+        }
+        
+        // Reset timer and refresh stats
+        resetTimer();
+        renderTaskQueue();
+        loadFocusStats();
+        loadTodaySessions();
+        toast('Session completed!', 'success');
+      }
+
+      function removeFromQueue() {
+        const idx = taskQueue.findIndex(t => t.taskId === pomodoroState.linkedTaskId);
+        if (idx !== -1) {
+          taskQueue.splice(idx, 1);
+        }
+        closeModal('more-sessions-modal');
+        
+        if (taskQueue.length > 0) {
+          selectQueueTask(0);
+        } else {
+          unlinkTask();
+        }
+        renderTaskQueue();
+      }
+
+      function promptMoreSessions() {
+        closeModal('more-sessions-modal');
+        const task = taskQueue.find(t => t.taskId === pomodoroState.linkedTaskId);
+        if (task) {
+          openSessionCountModal(task.taskId, task.taskTitle);
+        }
+      }
+
+      // ===== INIT =====
+      document.addEventListener("DOMContentLoaded", init);
+
+      function init() {
+        weekStart = getCurrentWeekStart();
+        loadWeek();
+        loadKanban();
+        document.getElementById("task-form").onsubmit = saveTask;
+        document.getElementById("prog-form").onsubmit = saveProg;
+        document.getElementById("kanban-form").onsubmit = saveKanbanItem;
+        // Request notification permission
+        if ("Notification" in window && Notification.permission === "default") {
+          Notification.requestPermission();
+        }
+      }
+
+      // ===== VIEW SWITCHING =====
+      function switchView(view) {
+        currentView = view;
+
+        document.getElementById("habits-view").classList.remove("active");
+        document.getElementById("kanban-view").classList.remove("active");
+        document.getElementById("focus-view").classList.remove("active");
+        document.getElementById("habits-toggle").classList.remove("active");
+        document.getElementById("kanban-toggle").classList.remove("active");
+        document.getElementById("focus-toggle").classList.remove("active");
+
+        if (view === "habits") {
+          document.getElementById("habits-view").classList.add("active");
+          document.getElementById("habits-toggle").classList.add("active");
+        } else if (view === "kanban") {
+          document.getElementById("kanban-view").classList.add("active");
+          document.getElementById("kanban-toggle").classList.add("active");
+          loadKanban();
+        } else if (view === "focus") {
+          document.getElementById("focus-view").classList.add("active");
+          document.getElementById("focus-toggle").classList.add("active");
+          loadFocusStats();
+          loadTodaySessions();
+          updateTimerDisplay();
+        }
+      }
+
+      function handleAddClick() {
+        if (currentView === "habits") {
+          openAddModal();
+        } else if (currentView === "kanban") {
+          openKanbanModal();
+        } else if (currentView === "focus") {
+          openQuickAddModal();
+        }
+      }
+
+      // ===== UTILITY FUNCTIONS =====
+      function getCurrentWeekStart() {
+        const now = new Date();
+        const day = now.getDay();
+        const diff = now.getDate() - day;
+        const start = new Date(now.getFullYear(), now.getMonth(), diff);
+        start.setHours(0, 0, 0, 0);
+        return start;
+      }
+
+      function fmt(d) {
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, "0");
+        const day = String(d.getDate()).padStart(2, "0");
+        return `${year}-${month}-${day}`;
+      }
+
+      function fmtShort(s) {
+        const parts = s.split("-");
+        const d = new Date(
+          parseInt(parts[0]),
+          parseInt(parts[1]) - 1,
+          parseInt(parts[2])
+        );
+        return d.toLocaleDateString("en-US", {
+          month: "short",
+          day: "numeric",
+        });
+      }
+
+      function fmtFull(s) {
+        const parts = s.split("-");
+        const d = new Date(
+          parseInt(parts[0]),
+          parseInt(parts[1]) - 1,
+          parseInt(parts[2])
+        );
+        return d.toLocaleDateString("en-US", {
+          weekday: "long",
+          month: "long",
+          day: "numeric",
+        });
+      }
+
+      function getTodayStr() {
+        return fmt(new Date());
+      }
+
+      function openModal(id) {
+        document.getElementById(id).classList.add("active");
+      }
+      function closeModal(id) {
+        document.getElementById(id).classList.remove("active");
+      }
+
+      function toast(msg, type = "info") {
+        const c = document.getElementById("toasts");
+        const t = document.createElement("div");
+        t.className = `toast ${type}`;
+        t.textContent = msg;
+        c.appendChild(t);
+        setTimeout(() => t.remove(), 3000);
+      }
+
+      // ===== HABITS FUNCTIONALITY =====
+      async function loadWeek() {
+        try {
+          const dateStr = fmt(weekStart);
+          const r = await fetch(`/api/progress/week?date=${dateStr}`);
+          if (!r.ok) throw new Error("Failed to load");
+          weekData = await r.json();
+          renderHabits();
+          updateCharts();
+        } catch (e) {
+          console.error("Load error:", e);
+          toast("error loading habits", "error");
+        }
+      }
+
+      function navWeek(dir) {
+        const newStart = new Date(weekStart);
+        newStart.setDate(newStart.getDate() + dir * 7);
+        weekStart = newStart;
+        loadWeek();
+      }
+
+      function renderHabits() {
+        document.getElementById("week-label").textContent = `${fmtShort(
+          weekData.week_start
+        )} — ${fmtShort(weekData.week_end)}`;
+
+        const days = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
+        const todayStr = getTodayStr();
+
+        for (let i = 0; i < 7; i++) {
+          const d = new Date(weekStart);
+          d.setDate(d.getDate() + i);
+          const dateStr = fmt(d);
+          const isToday = dateStr === todayStr;
+          document.getElementById("h" + i).innerHTML =
+            `<span style="${
+              isToday ? "color:var(--brown-dark);font-weight:600" : ""
+            }">${days[i]}</span><br>` +
+            `<span style="font-size:0.75rem;color:${
+              isToday ? "var(--tan-dark)" : "var(--tan)"
+            }">${d.getDate()}</span>`;
+        }
+
+        const tbody = document.getElementById("tbody");
+        const empty = document.getElementById("empty");
+
+        if (!weekData.tasks || !weekData.tasks.length) {
+          tbody.innerHTML = "";
+          empty.classList.remove("hidden");
+          return;
+        }
+        empty.classList.add("hidden");
+
+        tbody.innerHTML = weekData.tasks
+          .map((t) => {
+            let cells = "";
+            for (let i = 0; i < 7; i++) {
+              const day = t.days[i];
+              if (!day.is_scheduled) {
+                cells += `<td><span class="cell disabled">—</span></td>`;
+              } else {
+                const hasLog = day.log !== null && day.log !== undefined;
+                const isCompleted =
+                  hasLog &&
+                  (day.log.is_completed === true || day.log.is_completed === 1);
+                const isMissed = !isCompleted && day.is_past && !day.is_today;
+
+                let icon, cls;
+                if (isCompleted) {
+                  icon = "✓";
+                  cls = "done";
+                } else if (isMissed) {
+                  icon = "✗";
+                  cls = "missed";
+                } else {
+                  icon = "○";
+                  cls = "pending";
+                }
+
+                const todayClass = day.is_today ? "today" : "";
+                const canClick = !day.is_past || day.is_today || isCompleted;
+                const onclick = canClick
+                  ? `onclick="openProg(${t.id},'${day.date}')"`
+                  : "";
+
+                cells += `<td><span class="cell ${cls} ${todayClass}" ${onclick}>${icon}</span></td>`;
+              }
+            }
+            const escapedName = t.name
+              .replace(/'/g, "\\'")
+              .replace(/"/g, '\\"');
+            return `<tr>
+                <td><span class="task-name" onclick="openDetail(${t.id})">${t.name}</span></td>
+                ${cells}
+                <td><button class="delete-btn" onclick="openDel(${t.id},'${escapedName}')"><img src="/static/icons/icon_cross.png" style="width: 12px; height: 12px;"></button></td>
+            </tr>`;
+          })
+          .join("");
+      }
+
+      function toggleUnit() {
+        const mt = document.getElementById("metric-type").value;
+        document
+          .getElementById("unit-group")
+          .classList.toggle("hidden", mt === "BOOLEAN");
+      }
+
+      function openAddModal() {
+        // On Focus page, use the Quick Add modal instead
+        if (currentView === 'focus') {
+          openQuickAddModal();
+          return;
+        }
+        document.getElementById("modal-title").textContent = "new habit";
+        document.getElementById("task-form").reset();
+        document.getElementById("task-id").value = "";
+        document.getElementById("unit-group").classList.add("hidden");
+        openModal("task-modal");
+      }
+
+      async function saveTask(e) {
+        e.preventDefault();
+        const id = document.getElementById("task-id").value;
+        const mt = document.getElementById("metric-type").value;
+        const data = {
+          name: document.getElementById("task-name").value,
+          metric_type: mt,
+          metric_unit:
+            mt !== "BOOLEAN"
+              ? document.getElementById("metric-unit").value
+              : null,
+          target_value: document.getElementById("target-value").value
+            ? parseFloat(document.getElementById("target-value").value)
+            : null,
+          frequency: document.getElementById("frequency").value,
+        };
+        try {
+          if (id) {
+            delete data.metric_type;
+            await fetch(`/api/tasks/${id}`, {
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(data),
+            });
+          } else {
+            await fetch("/api/tasks", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(data),
+            });
+          }
+          closeModal("task-modal");
+          toast("saved!", "success");
+          await loadWeek();
+        } catch (e) {
+          toast("error saving", "error");
+        }
+      }
+
+      function openProg(tid, date) {
+        currentTask = weekData.tasks.find((t) => t.id === tid);
+        if (!currentTask) return;
+
+        document.getElementById("prog-tid").value = tid;
+        document.getElementById("prog-date").value = date;
+        document.getElementById("prog-name").textContent = currentTask.name;
+        document.getElementById("prog-date-label").textContent = fmtFull(date);
+
+        const day = currentTask.days.find((d) => d.date === date);
+        const val = day?.log?.metric_value || "";
+        const sec = document.getElementById("prog-input");
+
+        if (currentTask.metric_type === "BOOLEAN") {
+          sec.innerHTML =
+            '<div style="text-align:center;padding:1rem;color:var(--success)"><img src="/static/icons/icon_done.png" style="width: 48px; height: 48px;"></div><p style="text-align:center;color:var(--brown)">mark as done</p>';
+        } else if (currentTask.metric_type === "INTENSITY") {
+          sec.innerHTML = `<div class="form-group"><label>intensity</label><input type="range" id="prog-val" min="1" max="10" value="${
+            val || 5
+          }"><div style="text-align:center;font-size:1.5rem;font-family:Caveat" id="int-disp">${
+            val || 5
+          }</div></div>`;
+          setTimeout(() => {
+            const s = document.getElementById("prog-val");
+            if (s)
+              s.oninput = () =>
+                (document.getElementById("int-disp").textContent = s.value);
+          }, 10);
+        } else if (currentTask.metric_type === "PROGRESS") {
+          sec.innerHTML = `<div class="form-group"><label>progress</label><input type="range" id="prog-val" min="0" max="100" step="5" value="${
+            val || 0
+          }"><div style="text-align:center;font-size:1.5rem;font-family:Caveat" id="prog-disp">${
+            val || 0
+          }%</div></div>`;
+          setTimeout(() => {
+            const s = document.getElementById("prog-val");
+            if (s)
+              s.oninput = () =>
+                (document.getElementById("prog-disp").textContent =
+                  s.value + "%");
+          }, 10);
+        } else {
+          sec.innerHTML = `<div class="form-group"><label>${
+            currentTask.metric_unit || "value"
+          }</label><input type="number" id="prog-val" min="0" value="${val}" placeholder="enter value"></div>`;
+        }
+
+        document.getElementById("prog-notes").value = day?.log?.notes || "";
+        openModal("prog-modal");
+      }
+
+      async function saveProg(e) {
+        e.preventDefault();
+        const taskId = parseInt(document.getElementById("prog-tid").value);
+        const date = document.getElementById("prog-date").value;
+        const valEl = document.getElementById("prog-val");
+        const value =
+          currentTask.metric_type !== "BOOLEAN" && valEl
+            ? parseFloat(valEl.value)
+            : null;
+        const notes = document.getElementById("prog-notes").value || null;
+
+        try {
+          const r = await fetch("/api/progress", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ task_id: taskId, date, value, notes }),
+          });
+          if (!r.ok) throw new Error("Failed to save");
+          closeModal("prog-modal");
+          toast("logged!", "success");
+          await loadWeek();
+        } catch (e) {
+          toast("error saving", "error");
+        }
+      }
+
+      async function openDetail(tid) {
+        currentTask = weekData.tasks.find((t) => t.id === tid);
+        if (!currentTask) return;
+        document.getElementById("detail-title").textContent = currentTask.name;
+
+        try {
+          const r = await fetch(`/api/progress/stats/${tid}`);
+          const d = await r.json();
+          const s = d.stats;
+          document.getElementById("stat-health").textContent =
+            Math.round(s.health_score * 100) + "%";
+          document.getElementById("stat-streak").textContent =
+            s.current_streak + " days";
+          document.getElementById("stat-total").textContent =
+            s.total_completions;
+          document.getElementById("stat-avg").textContent = s.average_value
+            ? s.average_value.toFixed(1)
+            : "n/a";
+
+          const ctx = document.getElementById("detail-chart").getContext("2d");
+          if (detailChart) detailChart.destroy();
+
+          const weeks = [];
+          for (let i = 3; i >= 0; i--) {
+            const ws = getCurrentWeekStart();
+            ws.setDate(ws.getDate() - i * 7);
+            weeks.push(fmt(ws));
+          }
+
+          const sr = await fetch("/api/reports/summary?weeks=4");
+          const sd = await sr.json();
+          const taskData = sd.summary.tasks.find((t) => t.id === tid);
+
+          const data = weeks.map((w) => {
+            const wd = taskData?.weekly_data?.find((x) => x.week_start === w);
+            const sched =
+              currentTask.frequency === "WEEKDAYS"
+                ? 5
+                : currentTask.frequency === "WEEKENDS"
+                ? 2
+                : 7;
+            return wd ? Math.round((wd.completed_days / sched) * 100) : 0;
+          });
+
+          detailChart = new Chart(ctx, {
+            type: "line",
+            data: {
+              labels: weeks.map((w) => fmtShort(w)),
+              datasets: [
+                {
+                  data,
+                  borderColor: "#B99566",
+                  backgroundColor: "rgba(185,149,102,0.2)",
+                  fill: true,
+                  tension: 0.4,
+                },
+              ],
+            },
+            options: {
+              plugins: { legend: { display: false } },
+              scales: {
+                y: {
+                  beginAtZero: true,
+                  max: 100,
+                  ticks: { callback: (v) => v + "%" },
+                },
+              },
+            },
+          });
+        } catch (e) {
+          console.error("Detail error:", e);
+        }
+
+        openModal("detail-modal");
+      }
+
+      function editCurrentTask() {
+        if (!currentTask) return;
+        closeModal("detail-modal");
+        document.getElementById("modal-title").textContent = "edit habit";
+        document.getElementById("task-id").value = currentTask.id;
+        document.getElementById("task-name").value = currentTask.name;
+        document.getElementById("metric-type").value = currentTask.metric_type;
+        document.getElementById("metric-unit").value =
+          currentTask.metric_unit || "";
+        document.getElementById("target-value").value =
+          currentTask.target_value || "";
+        document.getElementById("frequency").value = currentTask.frequency;
+        toggleUnit();
+        openModal("task-modal");
+      }
+
+      function openDel(id, name) {
+        document.getElementById("del-id").value = id;
+        document.getElementById("del-name").textContent = `"${name}"`;
+        openModal("del-modal");
+      }
+
+      async function doDelete(perm) {
+        const id = document.getElementById("del-id").value;
+        try {
+          await fetch(`/api/tasks/${id}`, {
+            method: "DELETE",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ permanent: perm }),
+          });
+          closeModal("del-modal");
+          toast(perm ? "deleted" : "archived", "success");
+          await loadWeek();
+        } catch (e) {
+          toast("error", "error");
+        }
+      }
+
+      async function downloadPDF() {
+        toast("generating...", "info");
+        try {
+          const r = await fetch("/api/reports/pdf?weeks=4");
+          const blob = await r.blob();
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = "habits_report.pdf";
+          a.click();
+          URL.revokeObjectURL(url);
+          toast("downloaded!", "success");
+        } catch (e) {
+          toast("error", "error");
+        }
+      }
+
+      function updateCharts() {
+        if (!weekData?.tasks?.length) {
+          if (chart1) {
+            chart1.destroy();
+            chart1 = null;
+          }
+          if (chart2) {
+            chart2.destroy();
+            chart2 = null;
+          }
+          return;
+        }
+
+        const ctx1 = document.getElementById("chart1").getContext("2d");
+        const labels = weekData.tasks.map((t) =>
+          t.name.length > 10 ? t.name.slice(0, 10) + ".." : t.name
+        );
+        const data = weekData.tasks.map((t) => {
+          const sched = t.days.filter((d) => d.is_scheduled).length;
+          const done = t.days.filter(
+            (d) =>
+              d.is_scheduled &&
+              d.log &&
+              (d.log.is_completed === true || d.log.is_completed === 1)
+          ).length;
+          return sched ? Math.round((done / sched) * 100) : 0;
+        });
+
+        if (chart1) chart1.destroy();
+        chart1 = new Chart(ctx1, {
+          type: "bar",
+          data: {
+            labels,
+            datasets: [{ data, backgroundColor: "#C7A575", borderRadius: 4 }],
+          },
+          options: {
+            plugins: { legend: { display: false } },
+            scales: {
+              y: {
+                beginAtZero: true,
+                max: 100,
+                ticks: { callback: (v) => v + "%" },
+              },
+            },
+          },
+        });
+
+        loadTrend();
+      }
+
+      async function loadTrend() {
+        try {
+          const r = await fetch("/api/reports/summary?weeks=4");
+          const d = await r.json();
+          if (!d.summary?.tasks?.length) return;
+
+          const ctx = document.getElementById("chart2").getContext("2d");
+          const weeks = [];
+          for (let i = 3; i >= 0; i--) {
+            const ws = getCurrentWeekStart();
+            ws.setDate(ws.getDate() - i * 7);
+            weeks.push(fmt(ws));
+          }
+
+          const colors = ["#B99566", "#7C9A6E", "#C27C7C", "#8B7355"];
+          const datasets = d.summary.tasks.slice(0, 4).map((t, i) => ({
+            label: t.name.length > 8 ? t.name.slice(0, 8) + ".." : t.name,
+            data: weeks.map((w) => {
+              const wd = t.weekly_data.find((x) => x.week_start === w);
+              const sched =
+                t.frequency === "WEEKDAYS"
+                  ? 5
+                  : t.frequency === "WEEKENDS"
+                  ? 2
+                  : 7;
+              return wd ? Math.round((wd.completed_days / sched) * 100) : 0;
+            }),
+            borderColor: colors[i],
+            backgroundColor: colors[i] + "33",
+            fill: true,
+            tension: 0.4,
+          }));
+
+          if (chart2) chart2.destroy();
+          chart2 = new Chart(ctx, {
+            type: "line",
+            data: { labels: weeks.map((w) => fmtShort(w)), datasets },
+            options: {
+              plugins: {
+                legend: {
+                  position: "bottom",
+                  labels: { boxWidth: 8, font: { size: 10 } },
+                },
+              },
+              scales: {
+                y: {
+                  beginAtZero: true,
+                  max: 100,
+                  ticks: { callback: (v) => v + "%" },
+                },
+              },
+            },
+          });
+        } catch (e) {
+          console.error("Trend error:", e);
+        }
+      }
+
+      // ===== KANBAN FUNCTIONALITY =====
+      async function loadKanban() {
+        try {
+          const r = await fetch("/api/kanban");
+          if (!r.ok) throw new Error("Failed to load");
+          kanbanData = await r.json();
+          renderKanban();
+        } catch (e) {
+          console.error("Kanban load error:", e);
+          toast("error loading tasks", "error");
+        }
+      }
+
+      function renderKanban() {
+        const todo = kanbanData.TODO || [];
+        const progress = kanbanData.IN_PROGRESS || [];
+        const done = kanbanData.DONE || [];
+
+        document.getElementById("count-todo").textContent = todo.length;
+        document.getElementById("count-progress").textContent = progress.length;
+        document.getElementById("count-done").textContent = done.length;
+
+        document.getElementById("items-todo").innerHTML = todo
+          .map((i) => renderKanbanCard(i, "TODO"))
+          .join("");
+        document.getElementById("items-progress").innerHTML = progress
+          .map((i) => renderKanbanCard(i, "IN_PROGRESS"))
+          .join("");
+        document.getElementById("items-done").innerHTML = done
+          .map((i) => renderKanbanCard(i, "DONE"))
+          .join("");
+      }
+
+      function renderKanbanCard(item, status) {
+        const dateStr = fmtShort(item.due_date);
+        let actions = "";
+
+        if (status === "TODO") {
+          actions = `
+                <button class="move-btn" onclick="moveKanban(${item.id}, 'IN_PROGRESS')"              >
+                <img src="/static/icons/icon_play.png" style="width: 24px; height: 24px; vertical-align: middle; margin-right: 6px;"> start
+              </button>
+              <button 
+                class="move-btn done-btn" 
+                onclick="moveKanban(${item.id}, 'DONE')"
+              >
+                <img src="/static/icons/icon_done.png" style="width: 24px; height: 24px; vertical-align: middle; margin-right: 6px;"> done
+              </button>`;
+        } else if (status === "IN_PROGRESS") {
+          actions = `
+              <button class="move-btn" onclick="moveKanban(${item.id}, 'TODO')">
+                <img src="/static/icons/icon_arrow_left.png" style="width: 24px; height: 24px; vertical-align: middle; margin-right: 6px;"> back
+              </button>
+              <button class="move-btn done-btn" onclick="moveKanban(${item.id}, 'DONE')">
+                <img src="/static/icons/icon_done.png" style="width: 24px; height: 24px; vertical-align: middle; margin-right: 6px;"> done
+              </button>`;
+        } else { // status === "DONE"
+          actions = `<button class="move-btn" onclick="moveKanban(${item.id}, 'TODO')">
+            <img src="/static/icons/icon_undo.png" style="width: 24px; height: 24px; vertical-align: middle; margin-right: 6px;"> reopen
+          </button>`;
+        }
+
+        return `
+            <div class="kanban-card" onclick="openKanbanEdit(${item.id})">
+                <div class="kanban-card-title">${item.title}</div>
+                <div class="kanban-card-date">
+                  <img src="/static/icons/icon_calendar.png" style="width: 20px; height: 20px; vertical-align: middle; margin-right: 4px;"> ${dateStr}
+                </div>
+                <div class="kanban-card-actions" onclick="event.stopPropagation()">
+                    ${actions}
+                    <button class="move-btn" style="margin-left:auto" onclick="openKanbanDel(${
+                      item.id
+                    }, '${item.title.replace(/'/g, "\\'")}')"><img src="/static/icons/icon_trash.png" style="width: 24px; height: 24px;"></button>
+                </div>
+            </div>`;
+      }
+
+      function openKanbanModal() {
+        document.getElementById("kanban-modal-title").textContent = "new task";
+        document.getElementById("kanban-form").reset();
+        document.getElementById("kanban-id").value = "";
+        // Set default date to today
+        document.getElementById("kanban-date").value = getTodayStr();
+        openModal("kanban-modal");
+      }
+
+      function openKanbanEdit(id) {
+        const allItems = [
+          ...(kanbanData.TODO || []),
+          ...(kanbanData.IN_PROGRESS || []),
+          ...(kanbanData.DONE || []),
+        ];
+        currentKanbanItem = allItems.find((i) => i.id === id);
+        if (!currentKanbanItem) return;
+
+        document.getElementById("kanban-modal-title").textContent = "edit task";
+        document.getElementById("kanban-id").value = currentKanbanItem.id;
+        document.getElementById("kanban-title").value = currentKanbanItem.title;
+        document.getElementById("kanban-desc").value =
+          currentKanbanItem.description || "";
+        document.getElementById("kanban-date").value =
+          currentKanbanItem.due_date;
+        openModal("kanban-modal");
+      }
+
+      async function saveKanbanItem(e) {
+        e.preventDefault();
+        const id = document.getElementById("kanban-id").value;
+        const data = {
+          title: document.getElementById("kanban-title").value,
+          description: document.getElementById("kanban-desc").value,
+          due_date: document.getElementById("kanban-date").value,
+        };
+
+        try {
+          if (id) {
+            await fetch(`/api/kanban/${id}`, {
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(data),
+            });
+          } else {
+            await fetch("/api/kanban", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(data),
+            });
+          }
+          closeModal("kanban-modal");
+          toast("saved!", "success");
+          await loadKanban();
+        } catch (e) {
+          toast("error saving", "error");
+        }
+      }
+
+      async function moveKanban(id, newStatus) {
+        try {
+          await fetch(`/api/kanban/${id}/status`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ status: newStatus }),
+          });
+          await loadKanban();
+        } catch (e) {
+          toast("error moving", "error");
+        }
+      }
+
+      function openKanbanDel(id, title) {
+        document.getElementById("kanban-del-id").value = id;
+        document.getElementById("kanban-del-name").textContent = `"${title}"`;
+        openModal("kanban-del-modal");
+      }
+
+      async function doKanbanDelete() {
+        const id = document.getElementById("kanban-del-id").value;
+        try {
+          await fetch(`/api/kanban/${id}`, { method: "DELETE" });
+          closeModal("kanban-del-modal");
+          toast("deleted", "success");
+          await loadKanban();
+        } catch (e) {
+          toast("error", "error");
+        }
+      }
+
+      // ===== POMODORO TIMER =====
+      function updateTimerDisplay() {
+        const mins = Math.floor(pomodoroState.timeLeft / 60);
+        const secs = pomodoroState.timeLeft % 60;
+        document.getElementById("timer-display").textContent = `${mins
+          .toString()
+          .padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
+
+        const progress =
+          1 - pomodoroState.timeLeft / (pomodoroState.duration * 60);
+        const ring = document.getElementById("timer-ring");
+        if (ring) {
+          const circumference = 2 * Math.PI * 90;
+          ring.style.strokeDashoffset = circumference * (1 - progress);
+        }
+      }
+
+      async function startTimer() {
+        if (pomodoroState.isRunning) return;
+
+        pomodoroState.isRunning = true;
+        document.getElementById("start-btn").classList.add("hidden");
+        document.getElementById("pause-btn").classList.remove("hidden");
+        document.getElementById("done-btn").classList.remove("hidden"); // Show Done button
+        document.querySelector(".timer-circle").classList.add("running"); // Add pulse animation
+
+        try {
+          const r = await fetch("/api/focus/start", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              duration_minutes: pomodoroState.duration,
+              kanban_item_id: pomodoroState.linkedTaskId,
+            }),
+          });
+          const data = await r.json();
+          pomodoroState.sessionId = data.session.id;
+        } catch (e) {
+          console.error("Failed to start session:", e);
+        }
+
+        pomodoroState.interval = setInterval(() => {
+          pomodoroState.timeLeft--;
+          updateTimerDisplay();
+
+          if (pomodoroState.timeLeft <= 0) {
+            completeTimer();
+          }
+        }, 1000);
+      }
+
+      function pauseTimer() {
+        if (!pomodoroState.isRunning) return;
+
+        pomodoroState.isRunning = false;
+        clearInterval(pomodoroState.interval);
+        document.getElementById("start-btn").classList.remove("hidden");
+        document.getElementById("pause-btn").classList.add("hidden");
+        document.querySelector(".timer-circle").classList.remove("running"); // Remove pulse animation
+      }
+
+      async function completeTimer() {
+        pauseTimer();
+        playTimerSound();
+        // Add completion celebration animation
+        const timerCircle = document.querySelector(".timer-circle");
+        timerCircle.classList.add("complete");
+        setTimeout(() => timerCircle.classList.remove("complete"), 600);
+
+        if (pomodoroState.sessionId) {
+          try {
+            await fetch(`/api/focus/complete/${pomodoroState.sessionId}`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({}),
+            });
+          } catch (e) {
+            console.error("Failed to complete session:", e);
+          }
+        }
+
+        toast("Focus session complete!", "success");
+        resetTimer();
+        loadFocusStats();
+        loadTodaySessions();
+      }
+
+      function resetTimer() {
+        pauseTimer();
+        pomodoroState.timeLeft = pomodoroState.duration * 60;
+        pomodoroState.sessionId = null;
+        document.getElementById("done-btn").classList.add("hidden"); // Hide Done button
+        updateTimerDisplay();
+      }
+
+      function setTimerDuration(mins) {
+        pomodoroState.duration = mins;
+        pomodoroState.timeLeft = mins * 60;
+        updateTimerDisplay();
+        closeModal("timer-settings-modal");
+
+        document.querySelectorAll(".duration-btn").forEach((btn) => {
+          btn.classList.remove("active");
+          if (parseInt(btn.dataset.mins) === mins) btn.classList.add("active");
+        });
+      }
+
+      function linkTask(taskId, taskTitle) {
+        // Open session count modal instead of directly linking
+        closeModal("link-task-modal");
+        openSessionCountModal(taskId, taskTitle);
+      }
+
+      function unlinkTask() {
+        pomodoroState.linkedTaskId = null;
+        pomodoroState.linkedTaskTitle = null;
+        const linkedEl = document.getElementById("linked-task");
+        const btn = document.getElementById("choose-task-btn");
+        linkedEl.textContent = "Choose Task to focus on";
+        btn.style.borderColor = "var(--tan-light)";
+        btn.style.background = "var(--paper)";
+      }
+
+      function playTimerSound() {
+        try {
+          // Try to play sound - replace TIMER_COMPLETE_SOUND.mp3 with your own
+          const audio = new Audio("/static/sounds/TIMER_COMPLETE_SOUND.mp3");
+          audio.play().catch(() => {
+            if (Notification.permission === "granted") {
+              new Notification("Focus Session Complete!", {
+                body: "Great work! Take a break.",
+              });
+            }
+          });
+        } catch (e) {
+          console.log("Sound not available");
+        }
+      }
+
+      async function loadFocusStats() {
+        try {
+          const r = await fetch("/api/focus/stats");
+          const data = await r.json();
+          const stats = data.stats;
+
+          document.getElementById("today-hours").textContent =
+            stats.today_hours + "h";
+          document.getElementById("week-hours").textContent =
+            stats.week_hours + "h";
+          document.getElementById("focus-streak").textContent =
+            stats.streak_days + " days";
+
+          const mot = stats.motivation_level;
+          const img = document.getElementById('motivation-image');
+          const txt = document.getElementById('motivation-text');
+          
+          if (img && txt && mot) {
+              img.src = mot.image_url;
+              txt.textContent = mot.message;
+              txt.style.color = mot.color || 'var(--brown)';
+          }
+        } catch (e) {
+          console.error("Failed to load stats:", e);
+        }
+      }
+
+      // Clear sessions confirmation
+      function confirmClearSessions() {
+        if (confirm("Are you sure you want to clear today's sessions? This cannot be undone.")) {
+          clearTodaySessions();
+        }
+      }
+
+      async function clearTodaySessions() {
+        try {
+          await fetch('/api/focus/clear-today', { method: 'DELETE' });
+          loadTodaySessions();
+          loadFocusStats();
+          toast('Sessions cleared!', 'success');
+        } catch (e) {
+          console.error('Failed to clear sessions:', e);
+          toast('Could not clear sessions', 'error');
+        }
+      }
+
+      async function loadTodaySessions() {
+        try {
+          const r = await fetch("/api/focus/today");
+          const data = await r.json();
+          const container = document.getElementById("session-history");
+
+          if (!data.sessions || !data.sessions.length) {
+            container.innerHTML =
+              '<p style="color:var(--brown);text-align:center;padding:1rem">No sessions yet today</p>';
+            return;
+          }
+
+          container.innerHTML = data.sessions
+            .map(
+              (s) => `
+            <div class="session-item">
+              <span class="session-task">${s.task_title || "Free focus"}</span>
+              <span class="session-duration">${s.duration_minutes} min</span>
+              <span class="session-status">${
+                s.is_completed 
+                  ? '<img src="/static/icons/icon_done.png" style="width: 14px; height: 14px; vertical-align: middle;">' 
+                  : "..."
+              }</span>
+            </div>
+          `
+            )
+            .join("");
+        } catch (e) {
+          console.error("Failed to load sessions:", e);
+        }
+      }
+
+      function openTimerSettings() {
+        openModal("timer-settings-modal");
+      }
+
+      function openLinkTaskModal() {
+        const container = document.getElementById("linkable-tasks");
+        const allTasks = [
+          ...(kanbanData?.TODO || []),
+          ...(kanbanData?.IN_PROGRESS || []),
+        ];
+
+        if (!allTasks.length) {
+          container.innerHTML =
+            '<p style="text-align:center;color:var(--brown)">No tasks available. Add some in Tasks view!</p>';
+        } else {
+          container.innerHTML = allTasks
+            .map(
+              (t) => `
+            <button class="linkable-task-btn" onclick="linkTask(${
+              t.id
+            }, '${t.title.replace(/'/g, "\\'")}')">
+              ${t.title}
+            </button>
+          `
+            )
+            .join("");
+        }
+        openModal("link-task-modal");
+      }
+    </script>
+  </body>
+</html>
