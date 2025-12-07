@@ -154,6 +154,7 @@
 
       .toggle-btn {
         background: var(--cream);
+        color: var(--brown-dark);
         border: 3px solid transparent;
         padding: 0.6rem 1.2rem;
         border-radius: 20px;
@@ -456,7 +457,7 @@
         display: block;
         margin: 0 auto;
         background: var(--tan-dark);
-        color: var(--cream);
+        color: var(--brown-dark);
         border: none;
         padding: 0.75rem 1.5rem;
         border-radius: 10px;
@@ -706,8 +707,9 @@
 
       .form-group label {
         display: block;
-        font-size: 0.85rem;
-        font-weight: 500;
+        font-family: 'Caveat', cursive;
+        font-size: 1.2rem;
+        font-weight: 600;
         color: var(--brown);
         margin-bottom: 0.25rem;
       }
@@ -740,9 +742,11 @@
       }
 
       .btn {
-        padding: 0.6rem 1.25rem;
-        border-radius: 8px;
-        font-weight: 500;
+        padding: 0.7rem 1.5rem;
+        border-radius: 10px;
+        font-family: 'Caveat', cursive;
+        font-size: 1.15rem;
+        font-weight: 600;
         cursor: pointer;
         transition: all 0.2s;
         border: none;
@@ -759,13 +763,22 @@
       }
 
       .btn-primary {
-        background: var(--tan-dark);
+        background: linear-gradient(180deg, var(--tan) 0%, var(--tan-dark) 100%);
         color: var(--cream);
+        box-shadow: 0 3px 0 var(--brown);
+      }
+      
+      .btn-primary:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 0 var(--brown), 0 0 12px rgba(199, 165, 117, 0.3);
+      }
+      
+      .btn-primary:active {
+        transform: translateY(2px);
+        box-shadow: 0 1px 0 var(--brown);
       }
 
-      .btn-primary:hover {
-        background: var(--brown);
-      }
+
 
       .btn-danger {
         background: var(--danger);
@@ -1301,7 +1314,7 @@ img.icon {
       }
       .timer-btn {
         background: linear-gradient(180deg, var(--tan) 0%, var(--tan-dark) 100%);
-        color: var(--cream);
+        color: var(--brown-dark);
         border: none;
         padding: 0.8rem 2rem;
         border-radius: 25px;
@@ -1323,6 +1336,11 @@ img.icon {
         background: var(--paper);
         color: var(--brown);
         box-shadow: 0 3px 0 var(--tan);
+      }
+      
+      /* Dark mode: use lighter tan color for better visibility */
+      [data-theme="dark"] .timer-btn.secondary {
+        color: var(--brown-dark);
       }
       .linked-task-display {
         background: var(--paper);
@@ -1429,7 +1447,9 @@ img.icon {
         padding: 0.6rem 1.2rem;
         border-radius: 20px;
         cursor: pointer;
-        font-weight: 500;
+        font-family: 'Caveat', cursive;
+        font-size: 1.15rem;
+        font-weight: 600;
         transition: all 0.2s;
       }
       .duration-btn:hover {
@@ -1439,6 +1459,14 @@ img.icon {
         background: var(--tan-dark);
         color: var(--cream);
         border-color: var(--tan-dark);
+      }
+      
+      /* Dark mode duration button text color */
+      [data-theme="dark"] .duration-btn {
+        color: var(--brown);
+      }
+      [data-theme="dark"] .duration-btn.active {
+        color: var(--cream);
       }
       .linkable-tasks {
         max-height: 250px;
@@ -2337,7 +2365,7 @@ img.icon {
               <button 
                 class="timer-btn" 
                 onclick="openLinkTaskModal()"
-                style="width: 100%; font-size: 0.85rem; padding: 0.6rem;"
+                style="width: 100%; font-size: 0.85rem; padding: 0.6rem; color: var(--brown-dark);"
               >
                 <img src="/static/icons/icon_add.png" class="icon" style="width: 16px; height: 16px; margin-right: 4px" />
                 Add from Tasks
@@ -2345,7 +2373,7 @@ img.icon {
               <button 
                 class="timer-btn" 
                 onclick="openQuickAddModal()"
-                style="width: 100%; font-size: 0.85rem; padding: 0.6rem;"
+                style="width: 100%; font-size: 0.85rem; padding: 0.6rem; color: var(--brown-dark);"
               >
                 <img src="/static/icons/icon_pencil.png" style="width: 24px; height: 24px; vertical-align: middle; margin-right: 6px;"> Create New Task
               </button>
@@ -2775,7 +2803,7 @@ img.icon {
       <div class="modal-bg" onclick="closeModal('timer-settings-modal')"></div>
       <div class="modal-box">
         <div class="modal-header">
-          <h2 style="display: flex; align-items: center; gap: 8px;"><img src="/static/icons/icon_stopwatch.png" style="width: 24px; height: 24px;"> timer settings</h2>
+          <h2 class="handwritten" style="display: flex; align-items: center; gap: 8px; font-size: 1.5rem;"><img src="/static/icons/icon_stopwatch.png" style="width: 24px; height: 24px;"> timer settings</h2>
           <button
             class="close-btn"
             onclick="closeModal('timer-settings-modal')"
@@ -2784,7 +2812,7 @@ img.icon {
           </button>
         </div>
         <div class="modal-body">
-          <p style="color: var(--brown); margin-bottom: 1rem">
+          <p style="color: var(--brown); margin-bottom: 1rem; font-family: 'Caveat', cursive; font-size: 1.2rem;">
             Choose focus duration:
           </p>
           <div class="duration-options">
@@ -3619,7 +3647,7 @@ img.icon {
           const isToday = dateStr === todayStr;
           document.getElementById("h" + i).innerHTML =
             `<span style="${isToday ? "color:var(--brown-dark);font-weight:600" : ""}">${days[i]}</span><br>` +
-            `<span style="font-size:0.75rem;color:${isToday ? "var(--tan-dark)" : "var(--tan)"}">${d.getDate()}</span>`;
+            `<span style="font-size:0.75rem;color:${isToday ? "var(--tan-dark)" : "var(--brown-dark)"}">${d.getDate()}</span>`;
         }
         
         // Cancel any pending fetch (debounce)
@@ -3710,7 +3738,7 @@ img.icon {
               isToday ? "color:var(--brown-dark);font-weight:600" : ""
             }">${days[i]}</span><br>` +
             `<span style="font-size:0.75rem;color:${
-              isToday ? "var(--tan-dark)" : "var(--tan)"
+              isToday ? "var(--tan-dark)" : "var(--brown-dark)"
             }">${d.getDate()}</span>`;
         }
 
