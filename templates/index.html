@@ -48,6 +48,16 @@
         --shadow-color: rgba(0, 0, 0, 0.3);
       }
 
+      /* Dark mode text visibility overrides */
+      [data-theme="dark"] th,
+      [data-theme="dark"] .task-name,
+      [data-theme="dark"] .chart-box h3,
+      [data-theme="dark"] .week-label,
+      [data-theme="dark"] .kanban-title,
+      [data-theme="dark"] .column-title {
+        color: #c4a882 !important;
+      }
+
       /* Smooth theme transition */
       *, *::before, *::after {
         transition: background-color 0.4s ease, color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
@@ -369,6 +379,8 @@
         border: none;
         padding: 0.75rem 1.5rem;
         border-radius: 10px;
+        font-family: "Caveat", cursive;
+        font-size: 1.3rem;
         font-weight: 500;
         cursor: pointer;
         transition: all 0.2s;
@@ -1701,7 +1713,7 @@ img.icon {
 
     <header>
       <div class="container">
-        <h1 style="display: flex; align-items: center; gap: 8px;">my habits <img src="/static/icons/icon_pencil.png" style="width: 24px; height: 24px;"></h1>
+        <h1 style="display: flex; align-items: center; gap: 6px;"><img src="/static/icons/logo_progresso.png" style="height: 40px; width: auto;"> Progresso</h1>
 
         <!-- Cartoony Toggle Buttons -->
         <div class="view-toggle">
@@ -2547,6 +2559,13 @@ img.icon {
     </div>
 
     <script>
+      // ===== CHART.JS GLOBAL FONT DEFAULTS =====
+      // Apply handwritten Caveat font to all chart elements
+      Chart.defaults.font.family = "'Caveat', cursive";
+      Chart.defaults.font.size = 16;
+      // Use bright golden color that matches "Dec 7 - Dec 13" label
+      Chart.defaults.color = '#c4a882';
+
       // ===== STATE =====
       let currentView = "habits";
       let weekStart = getCurrentWeekStart();
@@ -3009,11 +3028,34 @@ img.icon {
       async function loadWeek() {
         try {
           const dateStr = fmt(weekStart);
-          const r = await fetch(`/api/progress/week?date=${dateStr}`);
-          if (!r.ok) throw new Error("Failed to load");
-          weekData = await r.json();
+          // Fetch both datasets in parallel so charts load together
+          // Use Promise.allSettled to handle failures gracefully
+          const results = await Promise.allSettled([
+            fetch(`/api/progress/week?date=${dateStr}`),
+            fetch("/api/reports/summary?weeks=4")
+          ]);
+          
+          // Handle week data (required)
+          const weekResult = results[0];
+          if (weekResult.status === 'rejected' || !weekResult.value.ok) {
+            throw new Error("Failed to load week data");
+          }
+          weekData = await weekResult.value.json();
+          
+          // Handle trend data (optional - don't fail if it errors)
+          let trendData = null;
+          const trendResult = results[1];
+          if (trendResult.status === 'fulfilled' && trendResult.value.ok) {
+            try {
+              const trendJson = await trendResult.value.json();
+              trendData = trendJson.summary;
+            } catch (e) {
+              console.log("Trend data parse error - skipping");
+            }
+          }
+          
           renderHabits();
-          updateCharts();
+          updateCharts(trendData);
         } catch (e) {
           console.error("Load error:", e);
           toast("error loading habits", "error");
@@ -3402,7 +3444,7 @@ img.icon {
         }
       }
 
-      function updateCharts() {
+      function updateCharts(trendData) {
         if (!weekData?.tasks?.length) {
           if (chart1) {
             chart1.destroy();
@@ -3415,6 +3457,7 @@ img.icon {
           return;
         }
 
+        // === CHART 1: This Week ===
         const ctx1 = document.getElementById("chart1").getContext("2d");
         const labels = weekData.tasks.map((t) =>
           t.name.length > 10 ? t.name.slice(0, 10) + ".." : t.name
@@ -3449,9 +3492,59 @@ img.icon {
           },
         });
 
-        loadTrend();
+        // === CHART 2: Last 4 Weeks (render immediately with prefetched data) ===
+        if (trendData?.tasks?.length) {
+          const ctx = document.getElementById("chart2").getContext("2d");
+          const weeks = [];
+          for (let i = 3; i >= 0; i--) {
+            const ws = getCurrentWeekStart();
+            ws.setDate(ws.getDate() - i * 7);
+            weeks.push(fmt(ws));
+          }
+
+          const colors = ["#B99566", "#7C9A6E", "#C27C7C", "#8B7355"];
+          const datasets = trendData.tasks.slice(0, 4).map((t, i) => ({
+            label: t.name.length > 8 ? t.name.slice(0, 8) + ".." : t.name,
+            data: weeks.map((w) => {
+              const wd = t.weekly_data.find((x) => x.week_start === w);
+              const sched =
+                t.frequency === "WEEKDAYS"
+                  ? 5
+                  : t.frequency === "WEEKENDS"
+                  ? 2
+                  : 7;
+              return wd ? Math.round((wd.completed_days / sched) * 100) : 0;
+            }),
+            borderColor: colors[i],
+            backgroundColor: colors[i] + "33",
+            fill: true,
+            tension: 0.4,
+          }));
+
+          if (chart2) chart2.destroy();
+          chart2 = new Chart(ctx, {
+            type: "line",
+            data: { labels: weeks.map((w) => fmtShort(w)), datasets },
+            options: {
+              plugins: {
+                legend: {
+                  position: "bottom",
+                  labels: { boxWidth: 8, font: { size: 10 } },
+                },
+              },
+              scales: {
+                y: {
+                  beginAtZero: true,
+                  max: 100,
+                  ticks: { callback: (v) => v + "%" },
+                },
+              },
+            },
+          });
+        }
       }
 
+      // Kept for backwards compatibility (manual refresh)
       async function loadTrend() {
         try {
           const r = await fetch("/api/reports/summary?weeks=4");

@@ -81,6 +81,9 @@
         font-size: 1.8rem;
         color: var(--cream);
         text-decoration: none;
+        display: flex;
+        align-items: center;
+        gap: 0.2rem;
       }
 
       /* ===== COFFEE CUP THEME TOGGLE ===== */
@@ -207,8 +210,9 @@
       }
 
       .auth-header p {
-        color: var(--brown);
-        font-size: 0.9rem;
+        font-family: "Caveat", cursive;
+        color: var(--brown-dark);
+        font-size: 1.2rem;
       }
 
       /* Tab switching */
@@ -236,9 +240,15 @@
       }
 
       .auth-tab.active {
-        background: var(--tan-dark);
-        color: var(--cream);
-        border-color: var(--tan-dark);
+        background: #c7a575;
+        color: var(--brown-dark);
+        border-color: #c7a575;
+      }
+
+      /* Dark mode active tab */
+      [data-theme="dark"] .auth-tab.active {
+        background: #5c4a3d;
+        border-color: #5c4a3d;
       }
 
       /* Form */
@@ -271,7 +281,8 @@
       }
 
       .form-group input::placeholder {
-        color: var(--tan);
+        color: var(--brown-dark);
+        opacity: 0.7;
       }
 
       /* Remember me */
@@ -289,8 +300,9 @@
       }
 
       .remember-row label {
-        font-size: 0.9rem;
-        color: var(--brown);
+        font-family: "Caveat", cursive;
+        font-size: 1.1rem;
+        color: var(--brown-dark);
         cursor: pointer;
       }
 
@@ -298,19 +310,26 @@
       .btn-primary {
         width: 100%;
         padding: 0.85rem;
-        background: var(--tan-dark);
-        color: var(--cream);
-        border: none;
+        background: var(--paper);
+        color: var(--brown-dark);
+        border: 2px solid var(--brown-dark);
         border-radius: 8px;
-        font-size: 1rem;
+        font-family: "Caveat", cursive;
+        font-size: 1.3rem;
         font-weight: 500;
         cursor: pointer;
-        transition: all 0.2s;
+        transition: all 0.2s ease;
       }
 
       .btn-primary:hover {
-        background: var(--brown);
-        transform: translateY(-1px);
+        background: var(--tan-light);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(196, 168, 130, 0.3);
+      }
+
+      .btn-primary:active {
+        transform: translateY(0) scale(0.98);
+        box-shadow: none;
       }
 
       /* Messages */
@@ -338,15 +357,16 @@
       .footer {
         text-align: center;
         padding: 1rem;
-        color: var(--tan);
-        font-size: 0.8rem;
+        font-family: "Caveat", cursive;
+        color: var(--brown-dark);
+        font-size: 1.1rem;
       }
     </style>
   </head>
   <body>
     <!-- Header with theme toggle -->
     <header class="header">
-      <span class="logo">☕ Progresso</span>
+      <span class="logo">☕Progresso</span>
       <label class="coffee-toggle-nav" title="Toggle Theme">
         <input type="checkbox" id="theme-toggle" onchange="toggleTheme()">
         <span class="coffee-cup-nav">

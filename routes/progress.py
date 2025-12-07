@@ -14,6 +14,11 @@ progress_bp = Blueprint("progress", __name__, url_prefix="/api/progress")
 def get_week_progress():
     """Get progress for a specific week"""
     try:
+        from flask import session
+
+        print(
+            f"[DEBUG ROUTE] /api/progress/week - session user_id: {session.get('user_id')}"
+        )
         date_str = request.args.get("date")  # YYYY-MM-DD format
         progress = ProgressService.get_week_progress(date_str)
         return jsonify(progress)

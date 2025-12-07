@@ -1,35 +1,86 @@
 """
-Task business logic service - Supabase version
+Task business logic service - Supabase version with optional user isolation
 """
 
 from datetime import date, timedelta
+from flask import session
 from database.supabase_db import get_supabase
 
 
+def get_current_user_id():
+    """Get the current user's ID from session"""
+    return session.get("user_id")
+
+
 class TaskService:
+    # Set to True after running migration_add_user_id.sql
+    USER_ISOLATION_ENABLED = True
+
     @staticmethod
     def get_all_tasks(include_archived=False):
         """Get all tasks, optionally including archived"""
         supabase = get_supabase()
+        user_id = get_current_user_id()
+
+        print(
+            f"[DEBUG get_all_tasks] Session user_id: {user_id}, isolation_enabled: {TaskService.USER_ISOLATION_ENABLED}"
+        )
+
+        # If isolation is enabled but no user is logged in, return empty list
+        if TaskService.USER_ISOLATION_ENABLED and not user_id:
+            print(
+                "[DEBUG get_all_tasks] Isolation enabled but no user_id - returning empty list"
+            )
+            return []
+
         query = supabase.table("tasks").select("*")
+
+        # Only filter by user_id if isolation is enabled and user is logged in
+        if TaskService.USER_ISOLATION_ENABLED and user_id:
+            query = query.eq("user_id", user_id)
+            print(f"[DEBUG get_all_tasks] Filtering by user_id: {user_id}")
 
         if not include_archived:
             query = query.eq("is_archived", False)
 
         result = query.order("created_at", desc=True).execute()
+
+        # Debug: Show which tasks were returned and their user_ids
+        for task in result.data:
+            task_user_id = task.get("user_id")
+            task_name = task.get("name")
+            match = "MATCH" if str(task_user_id) == str(user_id) else "MISMATCH"
+            print(
+                f"[DEBUG get_all_tasks] Task '{task_name}' has user_id={task_user_id} ({match})"
+            )
+
+        print(f"[DEBUG get_all_tasks] Returned {len(result.data)} tasks")
         return result.data
 
     @staticmethod
     def get_task_by_id(task_id):
         """Get a single task by ID"""
         supabase = get_supabase()
-        result = supabase.table("tasks").select("*").eq("id", task_id).execute()
+        user_id = get_current_user_id()
+
+        query = supabase.table("tasks").select("*").eq("id", task_id)
+
+        if TaskService.USER_ISOLATION_ENABLED and user_id:
+            query = query.eq("user_id", user_id)
+
+        result = query.execute()
         return result.data[0] if result.data else None
 
     @staticmethod
     def create_task(data):
         """Create a new task"""
         supabase = get_supabase()
+        user_id = get_current_user_id()
+
+        # Create a new task
+        if TaskService.USER_ISOLATION_ENABLED and not user_id:
+            raise Exception("User must be logged in to create a task")
+
         insert_data = {
             "name": data["name"],
             "description": data.get("description"),
@@ -39,6 +90,11 @@ class TaskService:
             "frequency": data["frequency"],
             "custom_days": data.get("custom_days"),
         }
+
+        # Only add user_id if isolation is enabled
+        if TaskService.USER_ISOLATION_ENABLED and user_id:
+            insert_data["user_id"] = user_id
+
         result = supabase.table("tasks").insert(insert_data).execute()
         return result.data[0] if result.data else None
 
@@ -46,6 +102,7 @@ class TaskService:
     def update_task(task_id, data):
         """Update an existing task"""
         supabase = get_supabase()
+        user_id = get_current_user_id()
 
         allowed_fields = [
             "name",
@@ -58,9 +115,12 @@ class TaskService:
         update_data = {k: v for k, v in data.items() if k in allowed_fields}
 
         if update_data:
-            result = (
-                supabase.table("tasks").update(update_data).eq("id", task_id).execute()
-            )
+            query = supabase.table("tasks").update(update_data).eq("id", task_id)
+
+            if TaskService.USER_ISOLATION_ENABLED and user_id:
+                query = query.eq("user_id", user_id)
+
+            result = query.execute()
             return result.data[0] if result.data else None
 
         return TaskService.get_task_by_id(task_id)
@@ -69,15 +129,27 @@ class TaskService:
     def delete_task(task_id):
         """Permanently delete a task and its progress logs"""
         supabase = get_supabase()
-        supabase.table("tasks").delete().eq("id", task_id).execute()
+        user_id = get_current_user_id()
+
+        query = supabase.table("tasks").delete().eq("id", task_id)
+
+        if TaskService.USER_ISOLATION_ENABLED and user_id:
+            query = query.eq("user_id", user_id)
+
+        query.execute()
 
     @staticmethod
     def archive_task(task_id):
         """Archive a task (soft delete)"""
         supabase = get_supabase()
-        supabase.table("tasks").update({"is_archived": True}).eq(
-            "id", task_id
-        ).execute()
+        user_id = get_current_user_id()
+
+        query = supabase.table("tasks").update({"is_archived": True}).eq("id", task_id)
+
+        if TaskService.USER_ISOLATION_ENABLED and user_id:
+            query = query.eq("user_id", user_id)
+
+        query.execute()
 
     @staticmethod
     def get_week_start(target_date=None):

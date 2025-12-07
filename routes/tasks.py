@@ -3,8 +3,10 @@ Task CRUD API endpoints
 """
 
 from flask import Blueprint, request, jsonify
-from database.db import get_db
+# from database.db import get_db
+
 from services.task_service import TaskService
+from services.auth_service import AuthService
 
 tasks_bp = Blueprint("tasks", __name__, url_prefix="/api/tasks")
 
@@ -12,6 +14,9 @@ tasks_bp = Blueprint("tasks", __name__, url_prefix="/api/tasks")
 @tasks_bp.route("", methods=["GET"])
 def get_tasks():
     """List all active tasks"""
+    if not AuthService.is_authenticated():
+        return jsonify({"error": "Unauthorized"}), 401
+
     try:
         tasks = TaskService.get_all_tasks()
         return jsonify({"tasks": tasks})
@@ -22,6 +27,9 @@ def get_tasks():
 @tasks_bp.route("/<int:task_id>", methods=["GET"])
 def get_task(task_id):
     """Get a single task by ID"""
+    if not AuthService.is_authenticated():
+        return jsonify({"error": "Unauthorized"}), 401
+
     try:
         task = TaskService.get_task_by_id(task_id)
         if task is None:
@@ -34,6 +42,9 @@ def get_task(task_id):
 @tasks_bp.route("", methods=["POST"])
 def create_task():
     """Create a new task"""
+    if not AuthService.is_authenticated():
+        return jsonify({"error": "Unauthorized"}), 401
+
     try:
         data = request.get_json()
 
@@ -80,6 +91,9 @@ def create_task():
 @tasks_bp.route("/<int:task_id>", methods=["PUT"])
 def update_task(task_id):
     """Update an existing task"""
+    if not AuthService.is_authenticated():
+        return jsonify({"error": "Unauthorized"}), 401
+
     try:
         data = request.get_json()
 
@@ -101,6 +115,9 @@ def update_task(task_id):
 @tasks_bp.route("/<int:task_id>", methods=["DELETE"])
 def delete_task(task_id):
     """Delete or archive a task"""
+    if not AuthService.is_authenticated():
+        return jsonify({"error": "Unauthorized"}), 401
+
     try:
         data = request.get_json() or {}
         permanent = data.get("permanent", False)

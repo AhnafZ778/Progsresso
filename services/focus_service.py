@@ -1,31 +1,40 @@
 """
-Focus/Pomodoro session service - Supabase version
+Focus/Pomodoro session service - Supabase version with optional user isolation
 """
 
 from datetime import datetime, date, timedelta
+from flask import session
 from database.supabase_db import get_supabase
 
 
+def get_current_user_id():
+    """Get the current user's ID from session"""
+    return session.get("user_id")
+
+
 class FocusService:
+    # Set to True after running migration_add_user_id.sql
+    USER_ISOLATION_ENABLED = True
+
     @staticmethod
     def start_session(data):
         """Start a new focus session"""
         supabase = get_supabase()
+        user_id = get_current_user_id()
 
         duration = data.get("duration_minutes", 25)
         kanban_item_id = data.get("kanban_item_id")
 
-        result = (
-            supabase.table("focus_sessions")
-            .insert(
-                {
-                    "kanban_item_id": kanban_item_id,
-                    "duration_minutes": duration,
-                    "started_at": datetime.now().isoformat(),
-                }
-            )
-            .execute()
-        )
+        insert_data = {
+            "kanban_item_id": kanban_item_id,
+            "duration_minutes": duration,
+            "started_at": datetime.now().isoformat(),
+        }
+
+        if FocusService.USER_ISOLATION_ENABLED and user_id:
+            insert_data["user_id"] = user_id
+
+        result = supabase.table("focus_sessions").insert(insert_data).execute()
 
         return result.data[0] if result.data else None
 
@@ -33,14 +42,24 @@ class FocusService:
     def complete_session(session_id, notes=None):
         """Mark a session as completed"""
         supabase = get_supabase()
+        user_id = get_current_user_id()
 
-        supabase.table("focus_sessions").update(
-            {
-                "is_completed": True,
-                "ended_at": datetime.now().isoformat(),
-                "notes": notes,
-            }
-        ).eq("id", session_id).execute()
+        query = (
+            supabase.table("focus_sessions")
+            .update(
+                {
+                    "is_completed": True,
+                    "ended_at": datetime.now().isoformat(),
+                    "notes": notes,
+                }
+            )
+            .eq("id", session_id)
+        )
+
+        if FocusService.USER_ISOLATION_ENABLED and user_id:
+            query = query.eq("user_id", user_id)
+
+        query.execute()
 
         return FocusService.get_session_by_id(session_id)
 
@@ -48,37 +67,45 @@ class FocusService:
     def get_session_by_id(session_id):
         """Get a session by ID"""
         supabase = get_supabase()
-        result = (
-            supabase.table("focus_sessions").select("*").eq("id", session_id).execute()
-        )
+        user_id = get_current_user_id()
+
+        query = supabase.table("focus_sessions").select("*").eq("id", session_id)
+
+        if FocusService.USER_ISOLATION_ENABLED and user_id:
+            query = query.eq("user_id", user_id)
+
+        result = query.execute()
 
         if result.data:
-            session = result.data[0]
+            session_data = result.data[0]
             # Get task info if linked
-            if session.get("kanban_item_id"):
+            if session_data.get("kanban_item_id"):
                 task_result = (
                     supabase.table("kanban_items")
                     .select("title")
-                    .eq("id", session["kanban_item_id"])
+                    .eq("id", session_data["kanban_item_id"])
                     .execute()
                 )
-                session["task_title"] = (
+                session_data["task_title"] = (
                     task_result.data[0]["title"] if task_result.data else None
                 )
-            return session
+            return session_data
         return None
 
     @staticmethod
     def get_today_sessions():
         """Get all sessions from today"""
         supabase = get_supabase()
+        user_id = get_current_user_id()
         today = date.today().isoformat()
 
-        # Get sessions with task info via join
+        query = supabase.table("focus_sessions").select("*, kanban_items(title)")
+
+        if FocusService.USER_ISOLATION_ENABLED and user_id:
+            query = query.eq("user_id", user_id)
+
         result = (
-            supabase.table("focus_sessions")
-            .select("*, kanban_items(title)")
-            .gte("started_at", f"{today}T00:00:00")
+            query.gte("started_at", f"{today}T00:00:00")
             .lte("started_at", f"{today}T23:59:59")
             .order("started_at", desc=True)
             .execute()
@@ -86,11 +113,11 @@ class FocusService:
 
         sessions = []
         for row in result.data:
-            session = {k: v for k, v in row.items() if k != "kanban_items"}
-            session["task_title"] = (
+            session_data = {k: v for k, v in row.items() if k != "kanban_items"}
+            session_data["task_title"] = (
                 row["kanban_items"]["title"] if row.get("kanban_items") else None
             )
-            sessions.append(session)
+            sessions.append(session_data)
 
         return sessions
 
@@ -98,12 +125,16 @@ class FocusService:
     def get_total_today():
         """Get total focus time for today in minutes"""
         supabase = get_supabase()
+        user_id = get_current_user_id()
         today = date.today().isoformat()
 
+        query = supabase.table("focus_sessions").select("duration_minutes")
+
+        if FocusService.USER_ISOLATION_ENABLED and user_id:
+            query = query.eq("user_id", user_id)
+
         result = (
-            supabase.table("focus_sessions")
-            .select("duration_minutes")
-            .gte("started_at", f"{today}T00:00:00")
+            query.gte("started_at", f"{today}T00:00:00")
             .lte("started_at", f"{today}T23:59:59")
             .eq("is_completed", True)
             .execute()
@@ -116,6 +147,7 @@ class FocusService:
     def get_stats():
         """Get focus statistics"""
         supabase = get_supabase()
+        user_id = get_current_user_id()
         today = date.today()
         week_start = today - timedelta(days=today.weekday())
 
@@ -123,13 +155,17 @@ class FocusService:
         today_total = FocusService.get_total_today()
 
         # This week's total
+        week_query = supabase.table("focus_sessions").select("duration_minutes")
+
+        if FocusService.USER_ISOLATION_ENABLED and user_id:
+            week_query = week_query.eq("user_id", user_id)
+
         week_result = (
-            supabase.table("focus_sessions")
-            .select("duration_minutes")
-            .gte("started_at", f"{week_start.isoformat()}T00:00:00")
+            week_query.gte("started_at", f"{week_start.isoformat()}T00:00:00")
             .eq("is_completed", True)
             .execute()
         )
+
         week_total = (
             sum(s["duration_minutes"] for s in week_result.data)
             if week_result.data
@@ -137,12 +173,15 @@ class FocusService:
         )
 
         # All time total and count
-        all_result = (
-            supabase.table("focus_sessions")
-            .select("duration_minutes", count="exact")
-            .eq("is_completed", True)
-            .execute()
+        all_query = supabase.table("focus_sessions").select(
+            "duration_minutes", count="exact"
         )
+
+        if FocusService.USER_ISOLATION_ENABLED and user_id:
+            all_query = all_query.eq("user_id", user_id)
+
+        all_result = all_query.eq("is_completed", True).execute()
+
         all_total = (
             sum(s["duration_minutes"] for s in all_result.data)
             if all_result.data
@@ -169,15 +208,20 @@ class FocusService:
     def _calculate_streak():
         """Calculate consecutive days with completed sessions"""
         supabase = get_supabase()
+        user_id = get_current_user_id()
         streak = 0
         check_date = date.today()
 
         for _ in range(365):
             day_str = check_date.isoformat()
+
+            query = supabase.table("focus_sessions").select("id", count="exact")
+
+            if FocusService.USER_ISOLATION_ENABLED and user_id:
+                query = query.eq("user_id", user_id)
+
             result = (
-                supabase.table("focus_sessions")
-                .select("id", count="exact")
-                .gte("started_at", f"{day_str}T00:00:00")
+                query.gte("started_at", f"{day_str}T00:00:00")
                 .lte("started_at", f"{day_str}T23:59:59")
                 .eq("is_completed", True)
                 .execute()
@@ -244,15 +288,29 @@ class FocusService:
     def delete_session(session_id):
         """Delete a focus session"""
         supabase = get_supabase()
-        supabase.table("focus_sessions").delete().eq("id", session_id).execute()
+        user_id = get_current_user_id()
+
+        query = supabase.table("focus_sessions").delete().eq("id", session_id)
+
+        if FocusService.USER_ISOLATION_ENABLED and user_id:
+            query = query.eq("user_id", user_id)
+
+        query.execute()
         return True
 
     @staticmethod
     def clear_today_sessions():
         """Clear all of today's focus sessions"""
         supabase = get_supabase()
+        user_id = get_current_user_id()
         today = date.today().isoformat()
-        supabase.table("focus_sessions").delete().gte(
-            "started_at", f"{today}T00:00:00"
-        ).lte("started_at", f"{today}T23:59:59").execute()
+
+        query = supabase.table("focus_sessions").delete()
+
+        if FocusService.USER_ISOLATION_ENABLED and user_id:
+            query = query.eq("user_id", user_id)
+
+        query.gte("started_at", f"{today}T00:00:00").lte(
+            "started_at", f"{today}T23:59:59"
+        ).execute()
         return True

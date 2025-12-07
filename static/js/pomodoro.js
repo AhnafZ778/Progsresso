@@ -168,7 +168,7 @@ async function loadFocusStats() {
             box.classList.remove('hidden');
             img.src = mot.image_url;
             txt.textContent = mot.message;
-            txt.style.color = '#B91C1C';
+            txt.style.color = 'var(--danger)';
         }
     } catch(e) {
         console.error('Failed to load stats:', e);

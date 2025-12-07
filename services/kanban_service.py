@@ -1,24 +1,33 @@
 """
-Kanban board service - Supabase version
+Kanban board service - Supabase version with optional user isolation
 """
 
 from datetime import date, timedelta
+from flask import session
 from database.supabase_db import get_supabase
 
 
+def get_current_user_id():
+    """Get the current user's ID from session"""
+    return session.get("user_id")
+
+
 class KanbanService:
+    # Set to True after running migration_add_user_id.sql
+    USER_ISOLATION_ENABLED = True
+
     @staticmethod
     def get_all_items():
         """Get all Kanban items grouped by status"""
         supabase = get_supabase()
-        result = (
-            supabase.table("kanban_items")
-            .select("*")
-            .order("status")
-            .order("position")
-            .order("due_date")
-            .execute()
-        )
+        user_id = get_current_user_id()
+
+        query = supabase.table("kanban_items").select("*")
+
+        if KanbanService.USER_ISOLATION_ENABLED and user_id:
+            query = query.eq("user_id", user_id)
+
+        result = query.order("status").order("position").order("due_date").execute()
 
         items = result.data
 
@@ -32,14 +41,14 @@ class KanbanService:
     def get_next_date():
         """Calculate the next available date for a new item"""
         supabase = get_supabase()
+        user_id = get_current_user_id()
 
-        result = (
-            supabase.table("kanban_items")
-            .select("due_date")
-            .order("due_date", desc=True)
-            .limit(1)
-            .execute()
-        )
+        query = supabase.table("kanban_items").select("due_date")
+
+        if KanbanService.USER_ISOLATION_ENABLED and user_id:
+            query = query.eq("user_id", user_id)
+
+        result = query.order("due_date", desc=True).limit(1).execute()
 
         if result.data and result.data[0]["due_date"]:
             last_date = date.fromisoformat(result.data[0]["due_date"])
@@ -51,8 +60,9 @@ class KanbanService:
 
     @staticmethod
     def create_item(data):
-        """Create a new Kanban item with auto-assigned date"""
+        """Create a new Kanban item"""
         supabase = get_supabase()
+        user_id = get_current_user_id()
 
         title = data.get("title", "").strip()
         if not title:
@@ -74,30 +84,29 @@ class KanbanService:
             status = "TODO"
 
         # Get next position for target column
-        pos_result = (
-            supabase.table("kanban_items")
-            .select("position")
-            .eq("status", status)
-            .order("position", desc=True)
-            .limit(1)
-            .execute()
+        pos_query = (
+            supabase.table("kanban_items").select("position").eq("status", status)
         )
+
+        if KanbanService.USER_ISOLATION_ENABLED and user_id:
+            pos_query = pos_query.eq("user_id", user_id)
+
+        pos_result = pos_query.order("position", desc=True).limit(1).execute()
 
         position = (pos_result.data[0]["position"] + 1) if pos_result.data else 1
 
-        result = (
-            supabase.table("kanban_items")
-            .insert(
-                {
-                    "title": title,
-                    "description": description,
-                    "due_date": due_date,
-                    "status": status,
-                    "position": position,
-                }
-            )
-            .execute()
-        )
+        insert_data = {
+            "title": title,
+            "description": description,
+            "due_date": due_date,
+            "status": status,
+            "position": position,
+        }
+
+        if KanbanService.USER_ISOLATION_ENABLED and user_id:
+            insert_data["user_id"] = user_id
+
+        result = supabase.table("kanban_items").insert(insert_data).execute()
 
         return result.data[0] if result.data else None
 
@@ -105,13 +114,21 @@ class KanbanService:
     def get_item_by_id(item_id):
         """Get a single Kanban item by ID"""
         supabase = get_supabase()
-        result = supabase.table("kanban_items").select("*").eq("id", item_id).execute()
+        user_id = get_current_user_id()
+
+        query = supabase.table("kanban_items").select("*").eq("id", item_id)
+
+        if KanbanService.USER_ISOLATION_ENABLED and user_id:
+            query = query.eq("user_id", user_id)
+
+        result = query.execute()
         return result.data[0] if result.data else None
 
     @staticmethod
     def update_item(item_id, data):
         """Update a Kanban item"""
         supabase = get_supabase()
+        user_id = get_current_user_id()
 
         item = KanbanService.get_item_by_id(item_id)
         if not item:
@@ -140,12 +157,12 @@ class KanbanService:
             update_data["position"] = data["position"]
 
         if update_data:
-            result = (
-                supabase.table("kanban_items")
-                .update(update_data)
-                .eq("id", item_id)
-                .execute()
-            )
+            query = supabase.table("kanban_items").update(update_data).eq("id", item_id)
+
+            if KanbanService.USER_ISOLATION_ENABLED and user_id:
+                query = query.eq("user_id", user_id)
+
+            result = query.execute()
             return result.data[0] if result.data else None
 
         return KanbanService.get_item_by_id(item_id)
@@ -157,20 +174,21 @@ class KanbanService:
             raise ValueError("Invalid status")
 
         supabase = get_supabase()
+        user_id = get_current_user_id()
 
         # Get next position in target column
-        pos_result = (
-            supabase.table("kanban_items")
-            .select("position")
-            .eq("status", new_status)
-            .order("position", desc=True)
-            .limit(1)
-            .execute()
+        pos_query = (
+            supabase.table("kanban_items").select("position").eq("status", new_status)
         )
+
+        if KanbanService.USER_ISOLATION_ENABLED and user_id:
+            pos_query = pos_query.eq("user_id", user_id)
+
+        pos_result = pos_query.order("position", desc=True).limit(1).execute()
 
         position = (pos_result.data[0]["position"] + 1) if pos_result.data else 1
 
-        result = (
+        query = (
             supabase.table("kanban_items")
             .update(
                 {
@@ -179,8 +197,12 @@ class KanbanService:
                 }
             )
             .eq("id", item_id)
-            .execute()
         )
+
+        if KanbanService.USER_ISOLATION_ENABLED and user_id:
+            query = query.eq("user_id", user_id)
+
+        result = query.execute()
 
         return result.data[0] if result.data else None
 
@@ -188,9 +210,16 @@ class KanbanService:
     def delete_item(item_id):
         """Delete a Kanban item"""
         supabase = get_supabase()
+        user_id = get_current_user_id()
+
         item = KanbanService.get_item_by_id(item_id)
         if not item:
             return False
 
-        supabase.table("kanban_items").delete().eq("id", item_id).execute()
+        query = supabase.table("kanban_items").delete().eq("id", item_id)
+
+        if KanbanService.USER_ISOLATION_ENABLED and user_id:
+            query = query.eq("user_id", user_id)
+
+        query.execute()
         return True
