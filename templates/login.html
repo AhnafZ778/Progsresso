@@ -61,7 +61,8 @@
 
       body {
         font-family: "Inter", sans-serif;
-        background: var(--paper);
+        background: url('/static/icons/cozy_banner.png') no-repeat center center fixed;
+        background-size: cover;
         color: var(--ink);
         min-height: 100vh;
         display: flex;
@@ -75,6 +76,7 @@
         display: flex;
         justify-content: space-between;
         align-items: center;
+        min-height: 80px; /* Matches homepage header height */
       }
 
       .logo {
@@ -366,15 +368,19 @@
   </head>
   <body>
     <!-- Header with theme toggle -->
-    <header class="header">
-      <span class="logo"><img src="/static/icons/progspresso_logo.png" alt="Progspresso" style="height: 60px; vertical-align: middle;"></span>
-      <p class="subtitle">your daily habit companion</p>
-      <label class="coffee-toggle-nav" title="Toggle Theme">
-        <input type="checkbox" id="theme-toggle" onchange="toggleTheme()">
-        <span class="coffee-cup-nav">
-          <span class="coffee-liquid-nav"></span>
-        </span>
-      </label>
+    <header class="header" style="position: relative; justify-content: center;">
+      <span class="logo" style="position: absolute; left: 1.5rem; top: 50%; transform: translateY(-50%);">
+        <img src="/static/icons/progspresso_logo.png" alt="Progspresso" style="height: 110px; vertical-align: middle; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.1));">
+      </span>
+
+      <div style="position: absolute; right: 1.5rem; top: 50%; transform: translateY(-50%);">
+        <label class="coffee-toggle-nav" title="Toggle Theme">
+          <input type="checkbox" id="theme-toggle" onchange="toggleTheme()">
+          <span class="coffee-cup-nav">
+            <span class="coffee-liquid-nav"></span>
+          </span>
+        </label>
+      </div>
     </header>
 
     <!-- Main content -->

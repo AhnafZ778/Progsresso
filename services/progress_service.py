@@ -145,6 +145,13 @@ class ProgressService:
         return ProgressService.get_log_by_id(log_id)
 
     @staticmethod
+    def delete_progress(log_id):
+        """Delete a progress log entry"""
+        supabase = get_supabase()
+        supabase.table("progress_logs").delete().eq("id", log_id).execute()
+        return True
+
+    @staticmethod
     def calculate_health_score(task_id):
         """
         Calculate health score based on 14-day completion rate and trend.

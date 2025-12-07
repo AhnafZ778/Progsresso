@@ -2473,7 +2473,7 @@ img.icon {
       <div class="modal-bg" onclick="closeModal('prog-modal')"></div>
       <div class="modal-box">
         <div class="modal-header">
-          <h2>log progress</h2>
+          <h2 class="handwritten" style="color: var(--brown-dark);">log progress</h2>
           <button class="close-btn" onclick="closeModal('prog-modal')">
             <img src="/static/icons/icon_cross.png" style="width: 14px; height: 14px;">
           </button>
@@ -2490,7 +2490,7 @@ img.icon {
               habit
             </div>
             <div
-              style="font-size: 0.85rem; color: var(--brown)"
+              style="font-size: 1.2rem; color: var(--brown)"
               id="prog-date-label"
             >
               date
@@ -2498,9 +2498,11 @@ img.icon {
           </div>
           <div id="prog-input"></div>
           <div class="form-group">
-            <label>notes</label>
+            <label class="handwritten" style="font-size: 1.3rem;">notes</label>
             <textarea
               id="prog-notes"
+              class="handwritten"
+              style="font-size: 1.2rem;"
               rows="2"
               placeholder="how did it go?"
             ></textarea>
@@ -2508,12 +2510,13 @@ img.icon {
           <div class="btn-row">
             <button
               type="button"
-              class="btn btn-cancel"
+              class="btn btn-cancel handwritten"
+              style="font-size: 1.2rem;"
               onclick="closeModal('prog-modal')"
             >
               cancel
             </button>
-            <button type="submit" class="btn btn-primary">done <img src="/static/icons/icon_done.png" style="width: 14px; height: 14px; vertical-align: middle; margin-left: 4px;"></button>
+            <button type="submit" class="btn btn-primary handwritten" style="font-size: 1.2rem;">done <span style="font-weight: bold; margin-left: 4px;">✓</span></button>
           </div>
         </form>
       </div>
@@ -3735,6 +3738,24 @@ img.icon {
         }
       }
 
+      async function undoProgress(logId) {
+        if (!confirm("Are you sure you want to undo this progress?")) return;
+        
+        try {
+          const res = await fetch(`/api/progress/${logId}`, {
+            method: "DELETE",
+          });
+          if (res.ok) {
+            closeModal("prog-modal");
+            loadWeek(weekStart);
+          } else {
+            console.error("Failed to undo progress");
+          }
+        } catch (e) {
+          console.error(e);
+        }
+      }
+
       function openProg(tid, date) {
         currentTask = weekData.tasks.find((t) => t.id === tid);
         if (!currentTask) return;
@@ -3742,44 +3763,92 @@ img.icon {
         document.getElementById("prog-tid").value = tid;
         document.getElementById("prog-date").value = date;
         document.getElementById("prog-name").textContent = currentTask.name;
+        document.getElementById("prog-name").style.fontFamily = "Caveat";
         document.getElementById("prog-date-label").textContent = fmtFull(date);
+        document.getElementById("prog-date-label").style.fontFamily = "Caveat";
 
         const day = currentTask.days.find((d) => d.date === date);
         const val = day?.log?.metric_value || "";
+        const logId = day?.log?.id;
+        const isCompleted = day?.log?.is_completed;
         const sec = document.getElementById("prog-input");
+        const btnRow = document.querySelector("#prog-form .btn-row");
 
-        if (currentTask.metric_type === "BOOLEAN") {
-          sec.innerHTML =
-            '<div style="text-align:center;padding:1rem;color:var(--success)"><img src="/static/icons/icon_done.png" style="width: 48px; height: 48px;"></div><p style="text-align:center;color:var(--brown)">mark as done</p>';
-        } else if (currentTask.metric_type === "INTENSITY") {
-          sec.innerHTML = `<div class="form-group"><label>intensity</label><input type="range" id="prog-val" min="1" max="10" value="${
-            val || 5
-          }"><div style="text-align:center;font-size:1.5rem;font-family:Caveat" id="int-disp">${
-            val || 5
-          }</div></div>`;
-          setTimeout(() => {
-            const s = document.getElementById("prog-val");
-            if (s)
-              s.oninput = () =>
-                (document.getElementById("int-disp").textContent = s.value);
-          }, 10);
-        } else if (currentTask.metric_type === "PROGRESS") {
-          sec.innerHTML = `<div class="form-group"><label>progress</label><input type="range" id="prog-val" min="0" max="100" step="5" value="${
-            val || 0
-          }"><div style="text-align:center;font-size:1.5rem;font-family:Caveat" id="prog-disp">${
-            val || 0
-          }%</div></div>`;
-          setTimeout(() => {
-            const s = document.getElementById("prog-val");
-            if (s)
-              s.oninput = () =>
-                (document.getElementById("prog-disp").textContent =
-                  s.value + "%");
-          }, 10);
+        let doneBtnHtml = `<button type="submit" class="btn btn-primary handwritten" style="font-size: 1.2rem;">done <span style="font-weight: bold; margin-left: 4px;">✓</span></button>`;
+
+        if (isCompleted) {
+           // Task is done -> Show Undo UI
+           sec.innerHTML = `
+             <div style="text-align:center;padding:1rem;">
+               <div style="font-family:'Caveat';font-size:1.5rem;color:var(--success);margin-bottom:1rem;">Completed!</div>
+               <div style="font-family:'Caveat';font-size:1.2rem;color:var(--ink);">You've already marked this as done.</div>
+             </div>
+           `;
+           doneBtnHtml = `<button type="button" class="btn btn-danger handwritten" style="font-size: 1.2rem; background-color: var(--danger); color: white; border: none;" onclick="undoProgress(${logId})">mark as undone <span style="font-weight: bold; margin-left: 4px;">✗</span></button>`;
         } else {
-          sec.innerHTML = `<div class="form-group"><label>${
-            currentTask.metric_unit || "value"
-          }</label><input type="number" id="prog-val" min="0" value="${val}" placeholder="enter value"></div>`;
+            // Task is pending -> Show Input UI
+            if (currentTask.metric_type === "BOOLEAN") {
+              sec.innerHTML =
+                '<div style="text-align:center;padding:1rem;color:var(--success);"><span style="font-size: 3rem;">✓</span></div><p style="text-align:center;color:var(--brown); font-family: \'Caveat\', cursive; font-size: 1.5rem;">mark as done</p>';
+            } else if (currentTask.metric_type === "INTENSITY") {
+              sec.innerHTML = `<div class="form-group"><label>intensity</label><input type="range" id="prog-val" min="1" max="10" value="${
+                val || 5
+              }"><div style="text-align:center;font-size:1.5rem;font-family:Caveat" id="int-disp">${
+                val || 5
+              }</div></div>`;
+              
+              // Attach listener for Intensity
+              setTimeout(() => {
+                const rng = document.getElementById("prog-val");
+                if (rng) {
+                  rng.addEventListener("input", (e) => {
+                    document.getElementById("int-disp").textContent = e.target.value;
+                  });
+                }
+              }, 0);
+
+            } else if (currentTask.metric_type === "PROGRESS") {
+               sec.innerHTML = `<div class="form-group"><label>progress %</label><input type="number" id="prog-val" min="0" max="100" value="${
+                val || 0
+               }"></div>`;
+            } else { // For other metric types like "NUMBER"
+              sec.innerHTML = `<div class="form-group"><label>${
+                currentTask.metric_unit || "value"
+              }</label><input type="number" id="prog-val" min="0" value="${val}" placeholder="enter value"></div>`;
+            }
+        }
+
+        // Update Button Row
+        if (btnRow) {
+             btnRow.innerHTML = `
+            <button
+              type="button"
+              class="btn btn-cancel handwritten"
+              style="font-size: 1.2rem;"
+              onclick="closeModal('prog-modal')"
+            >
+              cancel
+            </button>
+            ${doneBtnHtml}
+             `;
+        }
+
+        // Update static labels/buttons in modal to be handwritten
+        const progModal = document.getElementById("prog-modal");
+        progModal.querySelector("h2").style.fontFamily = "'Caveat', cursive";
+        
+        // Notes label
+        const notesLabel = progModal.querySelector("label[for='prog-notes']");
+        if(notesLabel) {
+            notesLabel.style.fontFamily = "'Caveat', cursive";
+            notesLabel.style.fontSize = "1.3rem";
+        }
+        
+        // Textarea
+        const textarea = progModal.querySelector("textarea");
+        if(textarea) {
+            textarea.style.fontFamily = "'Caveat', cursive";
+            textarea.style.fontSize = "1.2rem";
         }
 
         document.getElementById("prog-notes").value = day?.log?.notes || "";
@@ -4307,6 +4376,32 @@ img.icon {
 
         pomodoroState.isRunning = true;
         document.getElementById("start-btn").classList.add("hidden");
+        document.getElementById("prog-modal").classList.remove("hidden");
+        
+        // Update static labels/buttons in modal to be handwritten
+        const progModal = document.getElementById("prog-modal");
+        progModal.querySelector("h2").style.fontFamily = "'Caveat', cursive";
+        
+        // Notes label
+        const notesLabel = progModal.querySelector("label[for='prog-notes']");
+        if(notesLabel) {
+            notesLabel.style.fontFamily = "'Caveat', cursive";
+            notesLabel.style.fontSize = "1.3rem";
+        }
+        
+        // Textarea
+        const textarea = progModal.querySelector("textarea");
+        if(textarea) {
+            textarea.style.fontFamily = "'Caveat', cursive";
+            textarea.style.fontSize = "1.2rem";
+        }
+
+        // Action Buttons
+        const btns = progModal.querySelectorAll("button");
+        btns.forEach(btn => {
+            btn.style.fontFamily = "'Caveat', cursive";
+            btn.style.fontSize = "1.2rem";
+        });
         document.getElementById("pause-btn").classList.remove("hidden");
         document.getElementById("done-btn").classList.remove("hidden"); // Show Done button
         document.querySelector(".timer-circle").classList.add("running"); // Add pulse animation

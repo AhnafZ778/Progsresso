@@ -76,6 +76,16 @@ def update_progress(log_id):
         return jsonify({"error": str(e)}), 500
 
 
+@progress_bp.route("/<int:log_id>", methods=["DELETE"])
+def delete_progress(log_id):
+    """Delete a progress entry"""
+    try:
+        ProgressService.delete_progress(log_id)
+        return jsonify({"message": "Progress deleted successfully"}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 @progress_bp.route("/stats/<int:task_id>", methods=["GET"])
 def get_task_stats(task_id):
     """Get statistics for a specific task"""
