@@ -828,9 +828,8 @@
         bottom: unset;
       }
 
-      /* When visible, show the overlay container */
-      .coffee-loading-overlay.filling,
-      .coffee-loading-overlay.draining {
+      /* Visible class - just shows the overlay, pool stays at 0% */
+      .coffee-loading-overlay.visible {
         display: flex;
       }
 
@@ -839,11 +838,12 @@
         display: none;
       }
 
-      /* Coffee pool states */
+      /* Coffee pool states - filling makes pool rise to 100% */
       .coffee-loading-overlay.filling .coffee-pool {
         height: 100%;
       }
 
+      /* Draining makes pool fall to 0% */
       .coffee-loading-overlay.draining .coffee-pool {
         height: 0%;
       }
@@ -890,11 +890,13 @@
         height: 0%;
         background: linear-gradient(
           to top,
-          #4a3728 0%,
-          #6b5344 40%,
-          #8b7355 70%,
-          rgba(139, 115, 85, 0.8) 100%
+          #8b7355 0%,
+          #a08060 25%,
+          #b99566 50%,
+          #c7a575 75%,
+          rgba(213, 183, 139, 0.95) 100%
         );
+        box-shadow: inset 0 10px 30px rgba(74, 55, 40, 0.3);
         transition: height 0.8s cubic-bezier(0.4, 0, 0.2, 1);
         z-index: 1;
       }
@@ -907,8 +909,8 @@
         left: 0;
         right: 0;
         height: 16px;
-        background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 120'%3E%3Cpath fill='%238b7355' d='M0,60 C200,100 400,20 600,60 C800,100 1000,20 1200,60 L1200,120 L0,120 Z'/%3E%3C/svg%3E");
-        background-size: 600px 16px;
+        background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 120'%3E%3Cpath fill='%23b99566' d='M0,60 C200,100 400,20 600,60 C800,100 1000,20 1200,60 L1200,120 L0,120 Z'/%3E%3C/svg%3E");
+        background-size: 100% 16px;
         background-repeat: repeat-x;
         animation: coffeeWave 3s linear infinite;
       }
@@ -1056,10 +1058,10 @@
       [data-theme="dark"] .coffee-pool {
         background: linear-gradient(
           to top,
-          #2d2520 0%,
-          #3d322a 40%,
-          #5c4a3d 70%,
-          rgba(92, 74, 61, 0.8) 100%
+          #4a3728 0%,
+          #6b5344 40%,
+          #8b7355 70%,
+          rgba(139, 115, 85, 0.8) 100%
         );
       }
 
@@ -2795,7 +2797,7 @@ img.icon {
           <button class="timer-btn" onclick="closeIconSettings()" style="width: 100%;">
             <img src="/static/icons/icon_done.png" class="icon" style="width: 16px; height: 16px; margin-right: 4px;"> Done
           </button>
-          <a href="/logout" class="btn btn-cancel" style="width: 100%; text-align: center; text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 6px;">
+          <a href="/logout" class="timer-btn secondary" style="width: 100%; text-align: center; text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 6px;">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
               <polyline points="16 17 21 12 16 7"></polyline>
@@ -3446,10 +3448,16 @@ img.icon {
             }
             loader.classList.remove('first-load');
           }
+          // Step 1: Reset to initial state and make VISIBLE with pool at 0%
+          loader.classList.remove('hidden', 'draining', 'filling');
+          loader.classList.add('visible');
           
-          loader.classList.remove('hidden', 'draining');
+          // Step 2: Wait for browser to paint the 0% state
+          // Step 3: Add 'filling' class to animate pool rising from 0% to 100%
           requestAnimationFrame(() => {
-            loader.classList.add('filling');
+            requestAnimationFrame(() => {
+              loader.classList.add('filling');
+            });
           });
         }
       }
@@ -3462,22 +3470,21 @@ img.icon {
           // Immediately show content underneath and switch loader to overlay
           if (isFirstLoad && table) {
             table.style.display = ''; // Make table take up space immediately
-            // We don't need the 'habits-table-reveal' slide-in anymore because the coffee reveals it
             isFirstLoad = false;
           }
            
           // Remove first-load to make it absolute (overlaying the now-visible table)
           loader.classList.remove("first-load");
 
-          // Start draining animation (pool falls)
+          // Start draining animation (pool falls from current height to 0%)
           loader.classList.remove('filling');
           loader.classList.add('draining');
           
-          // Cleanup after animation
+          // Cleanup after draining animation completes
           setTimeout(() => {
             loader.classList.add('hidden');
-            loader.classList.remove('draining');
-          }, 600); // 0.6s match animation
+            loader.classList.remove('draining', 'visible');
+          }, 600); // 0.6s matches the drain animation duration
         }
       }
 
@@ -3550,14 +3557,29 @@ img.icon {
             `<span style="font-size:0.75rem;color:${isToday ? "var(--tan-dark)" : "var(--tan)"}">${d.getDate()}</span>`;
         }
         
-        // Show coffee rising immediately on first click
-        if (!isNavigating) {
-          isNavigating = true;
-          showCoffeeLoading();
-        }
-        
         // Cancel any pending fetch (debounce)
         clearTimeout(navDebounceTimer);
+        
+        // Show coffee rising on first click of a navigation sequence
+        if (!isNavigating) {
+          isNavigating = true;
+          
+          const loader = document.getElementById('coffee-loading');
+          if (loader) {
+            // Step 1: Reset all animation classes
+            loader.classList.remove('hidden', 'draining', 'filling', 'first-load');
+            
+            // Step 2: Add 'visible' to show overlay with pool at 0%
+            loader.classList.add('visible');
+            
+            // Step 3: Wait for browser to paint the 0% state, then animate rise
+            requestAnimationFrame(() => {
+              requestAnimationFrame(() => {
+                loader.classList.add('filling');
+              });
+            });
+          }
+        }
         
         // Schedule fetch after 150ms of no clicks (very responsive)
         navDebounceTimer = setTimeout(() => {
