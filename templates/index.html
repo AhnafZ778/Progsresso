@@ -3581,10 +3581,12 @@ img.icon {
           }
         }
         
-        // Schedule fetch after 150ms of no clicks (very responsive)
+        // Schedule fetch after 400ms of no clicks
+        // This delay ensures user has stopped navigating before we fetch
+        // The coffee animation stays "filled" until fetch completes
         navDebounceTimer = setTimeout(() => {
           loadWeekWithoutAnimation();
-        }, 150);
+        }, 400);
       }
 
       // Load week data without showing animation (animation already shown)
