@@ -1,5 +1,5 @@
 """
-Vercel serverless entry point for Progresso
+Vercel serverless entry point for Progspresso
 This file is the entry point for Vercel's Python runtime
 """
 

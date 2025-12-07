@@ -1,5 +1,5 @@
 """
-Supabase database connection for Progresso
+Supabase database connection for Progspresso
 Replaces SQLite with PostgreSQL via Supabase
 """
 

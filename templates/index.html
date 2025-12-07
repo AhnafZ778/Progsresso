@@ -3,7 +3,8 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Progresso</title>
+    <title>Progspresso</title>
+    <link rel="icon" type="image/png" href="/static/icons/progspresso_favicon.png">
     <link
       href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;600&family=Inter:wght@400;500;600&display=swap"
       rel="stylesheet"
@@ -768,6 +769,7 @@
 
       input[type="range"] {
         -webkit-appearance: none;
+        appearance: none;
         width: 100%;
         height: 8px;
         border-radius: 4px;
@@ -2013,14 +2015,19 @@ img.icon {
       }
 
     </style>
+
   </head>
   <body>
     <div class="toast-container" id="toasts"></div>
 
-    <header>
-      <div class="container">
-        <h1 style="margin: -30px 0;"><img src="/static/icons/progresso_logo.png" style="height: 120px; width: auto;" alt="Progresso"></h1>
+    <header style="position: relative;">
+      <!-- Logo absolutely positioned to the left of the entire header/page -->
+      <h1 style="margin: 0; position: absolute; top: 50%; left: 1.5rem; transform: translateY(-50%); z-index: 100;">
+          <img src="/static/icons/progspresso_logo.png" style="height: 110px; width: auto; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.1));" alt="Progspresso">
+      </h1>
 
+      <div class="container" style="justify-content: center;">
+        
         <!-- Cartoony Toggle Buttons -->
         <div class="view-toggle">
           <button
@@ -2031,32 +2038,44 @@ img.icon {
             <img
               src="/static/icons/icon_habits.png"
               class="icon"
-              alt="Habits"
+              style="width: 20px; height: 20px"
             />
-            Habits
+            <span>Habits</span>
           </button>
+          
           <button
             class="toggle-btn"
             id="kanban-toggle"
             onclick="switchView('kanban')"
           >
-            <img src="/static/icons/icon_tasks.png" class="icon" alt="Tasks" />
-            Tasks
+            <img
+              src="/static/icons/icon_tasks.png"
+              class="icon"
+              style="width: 20px; height: 20px"
+            />
+            <span>Tasks</span>
           </button>
+
           <button
             class="toggle-btn"
             id="focus-toggle"
             onclick="switchView('focus')"
           >
-            <img src="/static/icons/icon_focus.png" class="icon" alt="Focus" />
-            Focus
+            <img
+              src="/static/icons/icon_focus.png"
+              class="icon"
+              style="width: 20px; height: 20px"
+            />
+            <span>Focus</span>
           </button>
         </div>
-
-        <div
+      </div>
+          
+      <!-- Header Actions (New, Theme, Settings, Logout) absolutely positioned right -->
+      <div
           class="header-actions"
-          style="display: flex; align-items: center; gap: 12px"
-        >
+          style="position: absolute; right: 1.5rem; top: 50%; transform: translateY(-50%); display: flex; align-items: center; gap: 12px; z-index: 100;"
+      >
           <button class="add-btn" id="main-add-btn" onclick="handleAddClick()">
             <img
               src="/static/icons/icon_add.png"
@@ -2082,14 +2101,7 @@ img.icon {
             title="App Settings"
           />
           
-          <a href="/logout" title="Logout" style="display: inline-flex; align-items: center; margin-left: 8px;">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--cream)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-              <polyline points="16 17 21 12 16 7"></polyline>
-              <line x1="21" y1="12" x2="9" y2="12"></line>
-            </svg>
-          </a>
-        </div>
+
       </div>
     </header>
 
@@ -2141,9 +2153,9 @@ img.icon {
             <tbody id="tbody"></tbody>
           </table>
           <div id="empty" class="empty hidden">
-            <h3>no habits yet!</h3>
-            <p>add your first habit to get started</p>
-            <button class="btn btn-primary" onclick="openAddModal()">
+            <h3 class="handwritten" style="font-size: 2rem; color: var(--brown);">no habits yet!</h3>
+            <p class="handwritten" style="font-size: 1.5rem; color: var(--brown);">add your first habit to get started</p>
+            <button class="btn btn-primary handwritten" onclick="openAddModal()" style="font-size: 1.3rem;">
               + add habit
             </button>
           </div>
@@ -2170,7 +2182,7 @@ img.icon {
         <div class="kanban-header">
           <span class="kanban-title">
             <img src="/static/icons/icon_tasks.png" class="icon" alt="Tasks" />
-            my tasks
+            My Tasks
           </span>
         </div>
 
@@ -3441,22 +3453,25 @@ img.icon {
         const table = document.querySelector('#habits-card table');
         
         if (loader) {
+          // Immediately show content underneath and switch loader to overlay
+          if (isFirstLoad && table) {
+            table.style.display = ''; // Make table take up space immediately
+            // We don't need the 'habits-table-reveal' slide-in anymore because the coffee reveals it
+            isFirstLoad = false;
+          }
+           
+          // Remove first-load to make it absolute (overlaying the now-visible table)
+          loader.classList.remove("first-load");
+
           // Start draining animation (pool falls)
           loader.classList.remove('filling');
           loader.classList.add('draining');
           
-          // After drain animation, hide loader and show table
+          // Cleanup after animation
           setTimeout(() => {
             loader.classList.add('hidden');
-            loader.classList.remove('draining', 'first-load');
-            
-            if (isFirstLoad && table) {
-              // First load: show table with snap animation
-              table.style.display = '';
-              table.classList.add('habits-table-reveal');
-              isFirstLoad = false;
-            }
-          }, 700); // Match pool transition duration
+            loader.classList.remove('draining');
+          }, 600); // 0.6s match animation
         }
       }
 

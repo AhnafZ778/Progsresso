@@ -1,5 +1,5 @@
 """
-Authentication service for Progresso - Supabase Auth wrapper
+Authentication service for Progspresso - Supabase Auth wrapper
 """
 
 from database.supabase_db import get_supabase

@@ -1,5 +1,5 @@
 """
-Authentication routes for Progresso
+Authentication routes for Progspresso
 """
 
 from flask import Blueprint, render_template, request, redirect, url_for

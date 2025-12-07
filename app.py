@@ -1,6 +1,8 @@
 """
-Progresso - Weekly Habit Tracker Web Application
-Main Flask Application Entry Point
+Progspresso - Weekly Habit Tracker Web Application
+"""
+
+"""Main Flask Application Entry Point
 """
 
 from datetime import timedelta

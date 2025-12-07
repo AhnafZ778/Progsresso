@@ -1,5 +1,6 @@
 """
-Progresso Configuration
+Progspresso Configuration
+Settings for the Flask application
 """
 
 import os

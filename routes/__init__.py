@@ -1,4 +1,4 @@
-"""Routes module for Progresso"""
+"""Routes module for Progspresso"""
 
 from .tasks import tasks_bp
 from .progress import progress_bp

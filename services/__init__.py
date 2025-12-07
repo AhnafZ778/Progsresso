@@ -1,4 +1,4 @@
-"""Services module for Progresso"""
+"""Services module for Progspresso"""
 
 from .task_service import TaskService
 from .progress_service import ProgressService

@@ -1,5 +1,5 @@
 """
-Database connection and initialization for Progresso
+Database connection and initialization for Progspresso
 """
 
 import sqlite3
