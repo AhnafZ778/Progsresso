@@ -150,9 +150,12 @@
         border: none;
         padding: 0.5rem 1rem;
         border-radius: 8px;
-        font-weight: 500;
+        font-weight: 600;
+        font-size: 0.95rem;
         cursor: pointer;
         transition: all 0.2s;
+        display: flex;
+        align-items: center;
       }
 
       .add-btn:hover {
@@ -2082,7 +2085,7 @@ img.icon {
               class="icon"
               style="width: 16px; height: 16px; margin-right: 4px"
             />
-            new
+            New
           </button>
           
           <!-- Coffee Theme Toggle -->
@@ -2132,7 +2135,7 @@ img.icon {
                 <span class="coffee-loading-icon">
                   <img src="/static/icons/coffee_brewing.png" alt="Brewing...">
                 </span>
-                <span class="coffee-loading-label">Brewing your data...</span>
+                <span class="coffee-loading-label" style="color: var(--ink); font-weight: bold;">Brewing your data...</span>
               </span>
             </span>
           </div>
