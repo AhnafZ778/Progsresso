@@ -669,6 +669,47 @@
           transform: scale(1) translateY(0);
         }
       }
+      
+      @keyframes modalExit {
+        from {
+          opacity: 1;
+          transform: scale(1);
+        }
+        to {
+          opacity: 0;
+          transform: scale(1.02);
+        }
+      }
+      
+      @keyframes timerScrollUp {
+        from { 
+          transform: translateY(100%);
+        }
+        to { 
+          transform: translateY(0);
+        }
+      }
+      
+      @keyframes timerScrollDown {
+        from { 
+          transform: translateY(-100%);
+        }
+        to { 
+          transform: translateY(0);
+        }
+      }
+      
+      .modal-box.exiting {
+        animation: modalExit 0.15s ease-out forwards;
+      }
+      
+      .timer-display.scroll-up {
+        animation: timerScrollUp 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+      }
+      
+      .timer-display.scroll-down {
+        animation: timerScrollDown 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+      }
 
       .modal-header {
         padding: 1rem 1.25rem;
@@ -1297,14 +1338,23 @@ img.icon {
         stroke-dashoffset: 0;
         transition: stroke-dashoffset 1s linear;
       }
-      .timer-display {
+      .timer-display-wrapper {
         position: absolute;
         top: 50%;
         left: 50%;
         transform: translate(-50%, -50%);
+        overflow: hidden;
+        height: 4.5rem;
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .timer-display {
         font-family: "Caveat", cursive;
         font-size: 3.5rem;
         color: var(--brown-dark);
+        line-height: 1;
       }
       .timer-controls {
         display: flex;
@@ -2405,7 +2455,9 @@ img.icon {
                 r="90"
               />
             </svg>
-            <div class="timer-display" id="timer-display">25:00</div>
+            <div class="timer-display-wrapper">
+              <div class="timer-display" id="timer-display">25:00</div>
+            </div>
           </div>
 
           <!-- Controls -->
@@ -2434,7 +2486,6 @@ img.icon {
                   width: 16px;
                   height: 16px;
                   margin-right: 4px;
-                  filter: brightness(0) invert(1);
                 "
               />
               Pause
@@ -2443,9 +2494,9 @@ img.icon {
               class="timer-btn hidden"
               id="done-btn"
               onclick="markSessionDone()"
-              style="background: var(--success);"
+              style="background: var(--success); color: #3d2c1a;"
             >
-              <img src="/static/icons/icon_done.png" style="width: 16px; height: 16px; vertical-align: middle; margin-right: 4px; filter: brightness(0) invert(1);"> Done
+              <img src="/static/icons/icon_done.png" style="width: 16px; height: 16px; vertical-align: middle; margin-right: 4px;"> Done
             </button>
             <button class="timer-btn secondary" onclick="resetTimer()">
               <img
@@ -4596,15 +4647,47 @@ img.icon {
       }
 
       function setTimerDuration(mins) {
+        const previousDuration = pomodoroState.duration;
         pomodoroState.duration = mins;
         pomodoroState.timeLeft = mins * 60;
-        updateTimerDisplay();
-        closeModal("timer-settings-modal");
-
+        
+        // Update button states first
         document.querySelectorAll(".duration-btn").forEach((btn) => {
           btn.classList.remove("active");
           if (parseInt(btn.dataset.mins) === mins) btn.classList.add("active");
         });
+        
+        // Get the modal and add exit animation
+        const modal = document.getElementById("timer-settings-modal");
+        const modalBox = modal.querySelector(".modal-box");
+        modalBox.classList.add("exiting");
+        
+        // Wait for pop animation to complete, then close and animate timer
+        setTimeout(() => {
+          modalBox.classList.remove("exiting");
+          modal.classList.remove("active");
+          
+          // Update timer display
+          updateTimerDisplay();
+          
+          // Add scroll animation to timer based on direction
+          const timerDisplay = document.getElementById("timer-display");
+          timerDisplay.classList.remove("scroll-up", "scroll-down");
+          
+          // Force reflow to restart animation
+          void timerDisplay.offsetWidth;
+          
+          if (mins > previousDuration) {
+            timerDisplay.classList.add("scroll-up");
+          } else if (mins < previousDuration) {
+            timerDisplay.classList.add("scroll-down");
+          }
+          
+          // Remove animation class after it completes
+          setTimeout(() => {
+            timerDisplay.classList.remove("scroll-up", "scroll-down");
+          }, 400);
+        }, 150);
       }
 
       function linkTask(taskId, taskTitle) {
