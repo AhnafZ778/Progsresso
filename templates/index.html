@@ -570,10 +570,14 @@
 
       .kanban-card-date {
         font-size: 0.8rem;
-        color: var(--brown);
+        color: #5a4030;
         display: flex;
         align-items: center;
         gap: 0.3rem;
+      }
+
+      [data-theme="dark"] .kanban-card-date {
+        color: #f5e6d3;
       }
 
       .kanban-card-actions {
@@ -587,7 +591,9 @@
         border: none;
         padding: 0.3rem 0.5rem;
         border-radius: 6px;
-        font-size: 0.75rem;
+        font-family: "Caveat", cursive;
+        font-size: 0.95rem;
+        color: var(--brown-dark);
         cursor: pointer;
         transition: all 0.2s;
       }
@@ -598,6 +604,16 @@
       .move-btn.done-btn:hover {
         background: var(--success);
         color: white;
+      }
+
+      /* Dark mode for move-btn */
+      [data-theme="dark"] .move-btn {
+        color: #f5e6d3;
+        background: rgba(245, 230, 211, 0.1);
+      }
+
+      [data-theme="dark"] .move-btn:hover {
+        background: rgba(245, 230, 211, 0.2);
       }
 
       /* Reopen/Back button pops left (since arrow points left) */
@@ -614,6 +630,361 @@
       .move-btn:hover img[src*="undo"],
       .move-btn:hover img[src*="arrow_left"] {
         transform: translateX(-4px) scale(1.1);
+      }
+
+      /* ===== CUSTOM DATE PICKER ===== */
+      .date-picker-wrapper {
+        position: relative;
+      }
+
+      .date-picker-input {
+        width: 100%;
+        padding: 0.6rem 0.8rem;
+        border: 1px dashed var(--tan);
+        border-radius: 8px;
+        background: var(--paper);
+        font-family: "Caveat", cursive;
+        font-size: 1.1rem;
+        color: var(--brown-dark);
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+
+      .date-picker-input:hover {
+        border-color: var(--tan-dark);
+        background: var(--cream);
+      }
+
+      .date-picker-input:focus {
+        outline: none;
+        border-color: var(--tan-dark);
+        box-shadow: 0 0 0 3px rgba(185, 149, 102, 0.2);
+      }
+
+      .date-picker {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 320px;
+        background: var(--cream);
+        border: 2px dashed var(--tan);
+        border-radius: 12px;
+        padding: 1rem;
+        box-shadow: 0 12px 40px rgba(74, 55, 40, 0.3);
+        z-index: 250;
+        display: none;
+      }
+
+      .date-picker.active {
+        display: block;
+        animation: modalEnter 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+      }
+
+      /* Backdrop for date picker */
+      .date-picker-backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(74, 55, 40, 0.3);
+        backdrop-filter: blur(2px);
+        z-index: 240;
+        display: none;
+      }
+
+      .date-picker-backdrop.active {
+        display: block;
+        animation: fadeIn 0.2s ease;
+      }
+
+      .date-picker-shortcuts {
+        display: flex;
+        gap: 0.4rem;
+        margin-bottom: 0.6rem;
+      }
+
+      .shortcut-btn {
+        flex: 1;
+        padding: 0.4rem 0.3rem;
+        background: var(--tan-light);
+        border: none;
+        border-radius: 6px;
+        font-family: "Caveat", cursive;
+        font-size: 0.95rem;
+        color: #5a4030;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+
+      .shortcut-btn:hover {
+        background: var(--tan);
+        transform: translateY(-1px);
+      }
+
+      .date-picker-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.6rem;
+      }
+
+      .date-picker-title {
+        font-family: "Caveat", cursive;
+        font-size: 1.2rem;
+        font-weight: 600;
+        color: var(--brown-dark);
+      }
+
+      .picker-nav-btn {
+        background: var(--tan-light);
+        border: none;
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s;
+      }
+
+      .picker-nav-btn:hover {
+        background: var(--tan);
+        transform: scale(1.1);
+      }
+
+      .picker-nav-btn img {
+        width: 14px;
+        height: 14px;
+      }
+
+      .date-picker-weekdays {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        gap: 2px;
+        margin-bottom: 4px;
+      }
+
+      .weekday-label {
+        text-align: center;
+        font-family: "Caveat", cursive;
+        font-size: 0.85rem;
+        color: var(--tan-dark);
+        padding: 0.2rem;
+      }
+
+      .date-picker-grid {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        gap: 2px;
+      }
+
+      .picker-day {
+        aspect-ratio: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: "Caveat", cursive;
+        font-size: 1rem;
+        color: var(--coffee);
+        background: transparent;
+        border: none;
+        border-radius: 50%;
+        cursor: pointer;
+        transition: all 0.15s;
+      }
+
+      .picker-day:hover:not(.other-month):not(.selected) {
+        background: var(--tan-light);
+      }
+
+      .picker-day.today {
+        font-weight: 700;
+        color: var(--coffee);
+        background: var(--tan-light);
+      }
+
+      .picker-day.selected {
+        background: var(--tan-dark);
+        color: var(--cream);
+        font-weight: 600;
+      }
+
+      .picker-day.other-month {
+        color: var(--cream);
+        cursor: default;
+        opacity: 0.5;
+      }
+
+      /* Time selection section */
+      .date-picker-time {
+        margin-top: 0.8rem;
+        padding-top: 0.6rem;
+        border-top: 1px dashed var(--tan);
+      }
+
+      .time-toggle-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 0.5rem;
+      }
+
+      .time-toggle-label {
+        font-family: "Caveat", cursive;
+        font-size: 1rem;
+        color: var(--brown-dark);
+      }
+
+      .time-toggle {
+        position: relative;
+        width: 44px;
+        height: 24px;
+        background: var(--tan-light);
+        border-radius: 12px;
+        cursor: pointer;
+        transition: background 0.2s;
+      }
+
+      .time-toggle.active {
+        background: var(--tan-dark);
+      }
+
+      .time-toggle::after {
+        content: '';
+        position: absolute;
+        top: 2px;
+        left: 2px;
+        width: 20px;
+        height: 20px;
+        background: var(--cream);
+        border-radius: 50%;
+        transition: transform 0.2s;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      }
+
+      .time-toggle.active::after {
+        transform: translateX(20px);
+      }
+
+      .time-inputs {
+        display: none;
+        gap: 0.5rem;
+        align-items: center;
+      }
+
+      .time-inputs.active {
+        display: flex;
+      }
+
+      .time-input {
+        width: 50px;
+        padding: 0.4rem;
+        border: 1px dashed var(--tan);
+        border-radius: 6px;
+        background: var(--paper);
+        font-family: "Caveat", cursive;
+        font-size: 1.1rem;
+        color: var(--brown-dark);
+        text-align: center;
+      }
+
+      .time-separator {
+        font-family: "Caveat", cursive;
+        font-size: 1.2rem;
+        color: var(--brown-dark);
+      }
+
+      .time-period {
+        padding: 0.4rem 0.6rem;
+        border: 1px dashed var(--tan);
+        border-radius: 6px;
+        background: var(--paper);
+        font-family: "Caveat", cursive;
+        font-size: 1rem;
+        color: var(--brown-dark);
+        cursor: pointer;
+      }
+
+      .date-picker-done {
+        width: 100%;
+        margin-top: 0.8rem;
+        padding: 0.5rem;
+        background: var(--tan-dark);
+        border: none;
+        border-radius: 8px;
+        font-family: "Caveat", cursive;
+        font-size: 1.1rem;
+        color: #5a4030;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+
+      .date-picker-done:hover {
+        background: var(--coffee);
+        transform: translateY(-1px);
+      }
+
+      /* Dark mode for date picker */
+      [data-theme="dark"] .date-picker-input {
+        background: var(--paper);
+        color: #f5e6d3;
+        border-color: var(--tan-dark);
+      }
+
+      [data-theme="dark"] .date-picker {
+        background: var(--paper);
+        border-color: var(--tan-dark);
+      }
+
+      [data-theme="dark"] .shortcut-btn,
+      [data-theme="dark"] .picker-nav-btn {
+        background: rgba(245, 230, 211, 0.1);
+        color: #f5e6d3;
+      }
+
+      [data-theme="dark"] .shortcut-btn:hover,
+      [data-theme="dark"] .picker-nav-btn:hover {
+        background: rgba(245, 240, 230, 0.2);
+      }
+
+      [data-theme="dark"] .date-picker-title,
+      [data-theme="dark"] .time-toggle-label,
+      [data-theme="dark"] .time-separator {
+        color: #f5e6d3;
+      }
+
+      [data-theme="dark"] .weekday-label {
+        color: #a08060;
+      }
+
+      [data-theme="dark"] .picker-day.today {
+        background: rgba(245, 230, 211, 0.15);
+        color: #f5e6d3;
+      }
+
+      [data-theme="dark"] .picker-day:hover:not(.other-month):not(.selected) {
+        background: rgba(245, 230, 211, 0.1);
+      }
+
+      [data-theme="dark"] .picker-day {
+        color: #f5e6d3;
+      }
+
+      [data-theme="dark"] .picker-day.other-month {
+        color: #5a4030;
+        opacity: 0.7;
+      }
+
+      [data-theme="dark"] .time-input,
+      [data-theme="dark"] .time-period {
+        background: rgba(245, 240, 230, 0.1);
+        color: var(--cream);
+        border-color: var(--tan-dark);
+      }
+
+      [data-theme="dark"] .date-picker-done {
+        background: rgba(245, 230, 211, 0.2);
+        color: #f5e6d3;
       }
 
       /* ===== MODALS ===== */
@@ -710,6 +1081,86 @@
       .timer-display.scroll-down {
         animation: timerScrollDown 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
       }
+      
+      /* Detail modal loading overlay */
+      .detail-loading-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0; /* Cover entire modal body */
+        overflow: hidden;
+        pointer-events: none;
+        z-index: 5;
+        border-radius: 0 0 14px 14px;
+        display: none;
+        align-items: flex-end;
+        justify-content: center;
+        background: var(--paper);
+      }
+      
+      .detail-loading-overlay.visible {
+        display: flex;
+      }
+      
+      .detail-loading-overlay.filling .coffee-pool {
+        height: 100%;
+      }
+      
+      .detail-loading-overlay.draining .coffee-pool {
+        height: 0%;
+      }
+      
+      .detail-loading-text {
+        position: absolute;
+        top: 50%;
+        left: 0;
+        right: 0;
+        transform: translateY(-50%);
+        text-align: center;
+        z-index: 10;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+      }
+      
+      .detail-loading-overlay.filling .detail-loading-text {
+        opacity: 1;
+      }
+      
+      .detail-loading-overlay.draining .detail-loading-text {
+        opacity: 0;
+      }
+      
+      .detail-loading-content {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.5rem;
+      }
+      
+      .detail-loading-icon {
+        display: block;
+        width: 64px;
+        height: auto;
+        margin: 0 auto 0.5rem;
+      }
+      
+      .detail-loading-icon img {
+        width: 100%;
+        height: auto;
+        animation: pulse 1.5s ease-in-out infinite;
+      }
+      
+      .detail-loading-label {
+        font-size: 1.3rem;
+        color: var(--ink);
+        font-weight: bold;
+      }
+      
+      @keyframes pulse {
+        0%, 100% { transform: scale(1); opacity: 1; }
+        50% { transform: scale(1.1); opacity: 0.8; }
+      }
 
       .modal-header {
         padding: 1rem 1.25rem;
@@ -805,7 +1256,7 @@
 
       .btn-primary {
         background: linear-gradient(180deg, var(--tan) 0%, var(--tan-dark) 100%);
-        color: var(--cream);
+        color: var(--brown);
         box-shadow: 0 3px 0 var(--brown);
       }
       
@@ -2665,7 +3116,7 @@ img.icon {
             >
               cancel
             </button>
-            <button type="submit" class="btn btn-primary handwritten" style="font-size: 1.2rem;">done <span style="font-weight: bold; margin-left: 4px;">✓</span></button>
+            <button type="submit" class="btn btn-primary handwritten" style="font-size: 1.2rem; color: var(--brown);">done <span style="font-weight: bold; margin-left: 4px; color: var(--success);">✓</span></button>
           </div>
         </form>
       </div>
@@ -2681,26 +3132,52 @@ img.icon {
             <img src="/static/icons/icon_cross.png" style="width: 14px; height: 14px;">
           </button>
         </div>
-        <div class="modal-body">
-          <div class="stat-grid">
-            <div class="stat-box">
-              <div class="value" id="stat-health">-</div>
-              <div class="label">health</div>
-            </div>
-            <div class="stat-box">
-              <div class="value" id="stat-streak">-</div>
-              <div class="label">streak</div>
-            </div>
-            <div class="stat-box">
-              <div class="value" id="stat-total">-</div>
-              <div class="label">total done</div>
-            </div>
-            <div class="stat-box">
-              <div class="value" id="stat-avg">-</div>
-              <div class="label">average</div>
-            </div>
+        <div class="modal-body" style="position: relative; min-height: 300px;">
+          <!-- Loading overlay for detail modal (coffee pool animation) -->
+          <div id="detail-loading" class="detail-loading-overlay">
+            <!-- Coffee pool that rises/falls -->
+            <div class="coffee-pool"></div>
+            <!-- Rising bubbles -->
+            <div class="coffee-bubble"></div>
+            <div class="coffee-bubble"></div>
+            <div class="coffee-bubble"></div>
+            <div class="coffee-bubble"></div>
+            <div class="coffee-bubble"></div>
+            <div class="coffee-bubble"></div>
+            <!-- Centered content -->
+            <span class="detail-loading-text">
+              <span class="detail-loading-content">
+                <span class="detail-loading-icon">
+                  <img src="/static/icons/coffee_brewing.png" alt="Brewing...">
+                </span>
+                <span class="handwritten detail-loading-label">Brewing your data...</span>
+              </span>
+            </span>
           </div>
-          <canvas id="detail-chart" height="150"></canvas>
+          
+          <!-- Stats content (shown after loading) -->
+          <div id="detail-content">
+            <div class="stat-grid">
+              <div class="stat-box">
+                <div class="value" id="stat-health">-</div>
+                <div class="label">health</div>
+              </div>
+              <div class="stat-box">
+                <div class="value" id="stat-streak">-</div>
+                <div class="label">streak</div>
+              </div>
+              <div class="stat-box">
+                <div class="value" id="stat-total">-</div>
+                <div class="label">total done</div>
+              </div>
+              <div class="stat-box">
+                <div class="value" id="stat-avg">-</div>
+                <div class="label">average</div>
+              </div>
+            </div>
+            <canvas id="detail-chart" height="150"></canvas>
+          </div>
+          
           <div class="btn-row" style="margin-top: 1.5rem">
             <button class="btn btn-cancel" onclick="closeModal('detail-modal')">
               close
@@ -2792,7 +3269,54 @@ img.icon {
           </div>
           <div class="form-group">
             <label>due date</label>
-            <input type="date" id="kanban-date" required />
+            <div class="date-picker-wrapper">
+              <input type="text" id="kanban-date-display" class="date-picker-input" placeholder="select date..." readonly onclick="toggleDatePicker()" />
+              <input type="hidden" id="kanban-date" required />
+              <input type="hidden" id="kanban-time" value="23:59" />
+              <div class="date-picker-backdrop" id="date-picker-backdrop" onclick="closeDatePicker()"></div>
+              <div class="date-picker" id="date-picker">
+                <div class="date-picker-shortcuts">
+                  <button type="button" class="shortcut-btn" onclick="setDateShortcut('today')">Today</button>
+                  <button type="button" class="shortcut-btn" onclick="setDateShortcut('tomorrow')">Tomorrow</button>
+                  <button type="button" class="shortcut-btn" onclick="setDateShortcut('nextweek')">Next Week</button>
+                </div>
+                <div class="date-picker-header">
+                  <button type="button" class="picker-nav-btn" onclick="navigateMonth(-1)">
+                    <img src="/static/icons/icon_arrow_left.png" alt="Previous">
+                  </button>
+                  <span class="date-picker-title" id="picker-month-year">December 2025</span>
+                  <button type="button" class="picker-nav-btn" onclick="navigateMonth(1)">
+                    <img src="/static/icons/icon_arrow_right.png" alt="Next">
+                  </button>
+                </div>
+                <div class="date-picker-weekdays">
+                  <span class="weekday-label">Su</span>
+                  <span class="weekday-label">Mo</span>
+                  <span class="weekday-label">Tu</span>
+                  <span class="weekday-label">We</span>
+                  <span class="weekday-label">Th</span>
+                  <span class="weekday-label">Fr</span>
+                  <span class="weekday-label">Sa</span>
+                </div>
+                <div class="date-picker-grid" id="picker-days"></div>
+                <div class="date-picker-time">
+                  <div class="time-toggle-row">
+                    <span class="time-toggle-label">Set custom time</span>
+                    <div class="time-toggle" id="time-toggle" onclick="toggleTimeInputs()"></div>
+                  </div>
+                  <div class="time-inputs" id="time-inputs">
+                    <input type="number" class="time-input" id="picker-hour" min="1" max="12" value="11" />
+                    <span class="time-separator">:</span>
+                    <input type="number" class="time-input" id="picker-minute" min="0" max="59" value="59" />
+                    <select class="time-period" id="picker-period">
+                      <option value="PM">PM</option>
+                      <option value="AM">AM</option>
+                    </select>
+                  </div>
+                </div>
+                <button type="button" class="date-picker-done" onclick="confirmDateSelection()">Done</button>
+              </div>
+            </div>
           </div>
           <div class="btn-row">
             <button
@@ -3067,6 +3591,10 @@ img.icon {
       let chart1 = null,
         chart2 = null,
         detailChart = null;
+      
+      // Prefetch cache for habit details (populated after calendar loads)
+      let statsCache = {};
+      let cachedSummaryData = null;
 
       /* ===== ICON SETTINGS ===== */
       function openIconSettings() {
@@ -3663,14 +4191,46 @@ img.icon {
             }
           }
           
+          // Cache the summary data for use in detail modal
+          cachedSummaryData = trendData;
+          
           renderHabits();
           updateCharts(trendData);
           hideCoffeeLoading();
+          
+          // Prefetch stats for all habits in background
+          prefetchHabitStats();
         } catch (e) {
           console.error("Load error:", e);
           toast("error loading habits", "error");
           hideCoffeeLoading();
         }
+      }
+      
+      // Prefetch all habit stats in background for instant detail modal
+      async function prefetchHabitStats() {
+        if (!weekData?.tasks) return;
+        
+        // Clear old cache
+        statsCache = {};
+        
+        // Fetch all stats in parallel (non-blocking)
+        const statsFetches = weekData.tasks.map(async (task) => {
+          try {
+            const r = await fetch(`/api/progress/stats/${task.id}`);
+            if (r.ok) {
+              const data = await r.json();
+              statsCache[task.id] = data.stats;
+            }
+          } catch (e) {
+            // Silently fail - we'll fetch again when modal opens
+          }
+        });
+        
+        // Run all fetches in parallel but don't await
+        Promise.all(statsFetches).then(() => {
+          console.log("Habit stats prefetched:", Object.keys(statsCache).length);
+        });
       }
 
       // Debounce timer for week navigation
@@ -4055,77 +4615,140 @@ img.icon {
       async function openDetail(tid) {
         currentTask = weekData.tasks.find((t) => t.id === tid);
         if (!currentTask) return;
+        
+        const loader = document.getElementById("detail-loading");
+        const content = document.getElementById("detail-content");
+        
+        // Destroy existing chart immediately
+        if (detailChart) {
+          detailChart.destroy();
+          detailChart = null;
+        }
+        
         document.getElementById("detail-title").textContent = currentTask.name;
+        
+        // Check if we have cached data
+        const hasCachedStats = statsCache[tid];
+        const hasCachedSummary = cachedSummaryData;
+        
+        if (hasCachedStats && hasCachedSummary) {
+          // Use cached data - no loading animation needed!
+          openModal("detail-modal");
+          renderDetailContent(tid, hasCachedStats, { summary: hasCachedSummary }, true);
+        } else {
+          // Show loading with coffee filling animation
+          loader.classList.remove("draining");
+          loader.classList.add("visible", "filling");
+          openModal("detail-modal");
 
-        try {
-          const r = await fetch(`/api/progress/stats/${tid}`);
-          const d = await r.json();
-          const s = d.stats;
-          document.getElementById("stat-health").textContent =
-            Math.round(s.health_score * 100) + "%";
-          document.getElementById("stat-streak").textContent =
-            s.current_streak + " days";
-          document.getElementById("stat-total").textContent =
-            s.total_completions;
-          document.getElementById("stat-avg").textContent = s.average_value
-            ? s.average_value.toFixed(1)
-            : "n/a";
-
-          const ctx = document.getElementById("detail-chart").getContext("2d");
-          if (detailChart) detailChart.destroy();
-
-          const weeks = [];
-          for (let i = 3; i >= 0; i--) {
-            const ws = getCurrentWeekStart();
-            ws.setDate(ws.getDate() - i * 7);
-            weeks.push(fmt(ws));
+          try {
+            // Fetch only what's missing
+            const fetchPromises = [];
+            if (!hasCachedStats) {
+              fetchPromises.push(fetch(`/api/progress/stats/${tid}`));
+            } else {
+              fetchPromises.push(Promise.resolve({ ok: true, json: () => Promise.resolve({ stats: hasCachedStats }) }));
+            }
+            if (!hasCachedSummary) {
+              fetchPromises.push(fetch("/api/reports/summary?weeks=4"));
+            } else {
+              fetchPromises.push(Promise.resolve({ ok: true, json: () => Promise.resolve({ summary: hasCachedSummary }) }));
+            }
+            
+            const [statsResponse, summaryResponse] = await Promise.all(fetchPromises);
+            
+            const [statsData, summaryData] = await Promise.all([
+              statsResponse.json(),
+              summaryResponse.json()
+            ]);
+            
+            // Cache for next time
+            statsCache[tid] = statsData.stats;
+            if (summaryData.summary) cachedSummaryData = summaryData.summary;
+            
+            renderDetailContent(tid, statsData.stats, summaryData);
+            
+            // Hide loading with draining animation
+            loader.classList.remove("filling");
+            loader.classList.add("draining");
+            
+            // Hide completely after drain animation
+            setTimeout(() => {
+              loader.classList.remove("visible", "draining");
+            }, 800);
+          } catch (e) {
+            console.error("Detail error:", e);
+            document.getElementById("stat-health").textContent = "Error";
+            document.getElementById("stat-streak").textContent = "Error";
+            document.getElementById("stat-total").textContent = "Error";
+            document.getElementById("stat-avg").textContent = "Error";
+            loader.classList.remove("visible", "filling", "draining");
           }
+        }
+      }
+      
+      // Helper to render detail modal content
+      function renderDetailContent(tid, stats, summaryData, isCached = false) {
+        document.getElementById("stat-health").textContent =
+          Math.round(stats.health_score * 100) + "%";
+        document.getElementById("stat-streak").textContent =
+          stats.current_streak + " days";
+        document.getElementById("stat-total").textContent =
+          stats.total_completions;
+        document.getElementById("stat-avg").textContent = stats.average_value
+          ? stats.average_value.toFixed(1)
+          : "n/a";
 
-          const sr = await fetch("/api/reports/summary?weeks=4");
-          const sd = await sr.json();
-          const taskData = sd.summary.tasks.find((t) => t.id === tid);
+        const ctx = document.getElementById("detail-chart").getContext("2d");
 
-          const data = weeks.map((w) => {
-            const wd = taskData?.weekly_data?.find((x) => x.week_start === w);
-            const sched =
-              currentTask.frequency === "WEEKDAYS"
-                ? 5
-                : currentTask.frequency === "WEEKENDS"
-                ? 2
-                : 7;
-            return wd ? Math.round((wd.completed_days / sched) * 100) : 0;
-          });
-
-          detailChart = new Chart(ctx, {
-            type: "line",
-            data: {
-              labels: weeks.map((w) => fmtShort(w)),
-              datasets: [
-                {
-                  data,
-                  borderColor: "#B99566",
-                  backgroundColor: "rgba(185,149,102,0.2)",
-                  fill: true,
-                  tension: 0.4,
-                },
-              ],
-            },
-            options: {
-              plugins: { legend: { display: false } },
-              scales: {
-                y: {
-                  beginAtZero: true,
-                  max: 100,
-                  ticks: { callback: (v) => v + "%" },
-                },
-              },
-            },
-          });
-        } catch (e) {
-          console.error("Detail error:", e);
+        const weeks = [];
+        for (let i = 3; i >= 0; i--) {
+          const ws = getCurrentWeekStart();
+          ws.setDate(ws.getDate() - i * 7);
+          weeks.push(fmt(ws));
         }
 
-        openModal("detail-modal");
+        const taskData = summaryData.summary?.tasks?.find((t) => t.id === tid);
+
+        const data = weeks.map((w) => {
+          const wd = taskData?.weekly_data?.find((x) => x.week_start === w);
+          const sched =
+            currentTask.frequency === "WEEKDAYS"
+              ? 5
+              : currentTask.frequency === "WEEKENDS"
+              ? 2
+              : 7;
+          return wd ? Math.round((wd.completed_days / sched) * 100) : 0;
+        });
+
+        detailChart = new Chart(ctx, {
+          type: "line",
+          data: {
+            labels: weeks.map((w) => fmtShort(w)),
+            datasets: [
+              {
+                data,
+                borderColor: "#B99566",
+                backgroundColor: "rgba(185,149,102,0.2)",
+                fill: true,
+                tension: 0.4,
+              },
+            ],
+          },
+          options: {
+            plugins: { legend: { display: false } },
+            scales: {
+              y: {
+                beginAtZero: true,
+                max: 100,
+                ticks: { callback: (v) => v + "%" },
+              },
+            },
+            animation: {
+              duration: isCached ? 0 : 300 // No animation if cached
+            }
+          },
+        });
       }
 
       function editCurrentTask() {
@@ -4212,6 +4835,11 @@ img.icon {
           return sched ? Math.round((done / sched) * 100) : 0;
         });
 
+        // Detect theme for chart colors
+        const isDarkMode = document.documentElement.getAttribute('data-theme') === 'dark';
+        const chartTextColor = isDarkMode ? '#f5f0e6' : '#5a4030'; // cream in dark, brown-dark in light
+        const chartGridColor = isDarkMode ? 'rgba(245, 240, 230, 0.1)' : 'rgba(90, 64, 48, 0.1)';
+
         if (chart1) chart1.destroy();
         chart1 = new Chart(ctx1, {
           type: "bar",
@@ -4225,7 +4853,15 @@ img.icon {
               y: {
                 beginAtZero: true,
                 max: 100,
-                ticks: { callback: (v) => v + "%" },
+                ticks: { 
+                  callback: (v) => v + "%",
+                  color: chartTextColor
+                },
+                grid: { color: chartGridColor }
+              },
+              x: {
+                ticks: { color: chartTextColor },
+                grid: { color: chartGridColor }
               },
             },
           },
@@ -4268,14 +4904,26 @@ img.icon {
               plugins: {
                 legend: {
                   position: "bottom",
-                  labels: { boxWidth: 8, font: { size: 10 } },
+                  labels: { 
+                    boxWidth: 8, 
+                    font: { size: 10 },
+                    color: chartTextColor
+                  },
                 },
               },
               scales: {
                 y: {
                   beginAtZero: true,
                   max: 100,
-                  ticks: { callback: (v) => v + "%" },
+                  ticks: { 
+                    callback: (v) => v + "%",
+                    color: chartTextColor
+                  },
+                  grid: { color: chartGridColor }
+                },
+                x: {
+                  ticks: { color: chartTextColor },
+                  grid: { color: chartGridColor }
                 },
               },
             },
@@ -4435,12 +5083,214 @@ img.icon {
             </div>`;
       }
 
+      /* ===== CUSTOM DATE PICKER ===== */
+      let pickerYear, pickerMonth, selectedDate = null;
+      const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 
+                          'July', 'August', 'September', 'October', 'November', 'December'];
+
+      function toggleDatePicker() {
+        const picker = document.getElementById('date-picker');
+        const isActive = picker.classList.contains('active');
+        
+        if (isActive) {
+          picker.classList.remove('active');
+        } else {
+          // Initialize to current date or selected date
+          const today = new Date();
+          const existingDate = document.getElementById('kanban-date').value;
+          if (existingDate) {
+            const d = new Date(existingDate);
+            pickerYear = d.getFullYear();
+            pickerMonth = d.getMonth();
+            selectedDate = existingDate;
+          } else {
+            pickerYear = today.getFullYear();
+            pickerMonth = today.getMonth();
+            selectedDate = null;
+          }
+          renderCalendar();
+          picker.classList.add('active');
+          document.getElementById('date-picker-backdrop').classList.add('active');
+        }
+      }
+
+      function closeDatePicker() {
+        document.getElementById('date-picker').classList.remove('active');
+        document.getElementById('date-picker-backdrop').classList.remove('active');
+      }
+
+      function renderCalendar() {
+        const grid = document.getElementById('picker-days');
+        const titleEl = document.getElementById('picker-month-year');
+        
+        titleEl.textContent = `${monthNames[pickerMonth]} ${pickerYear}`;
+        
+        // Get first day of month and total days
+        const firstDay = new Date(pickerYear, pickerMonth, 1).getDay();
+        const daysInMonth = new Date(pickerYear, pickerMonth + 1, 0).getDate();
+        const daysInPrevMonth = new Date(pickerYear, pickerMonth, 0).getDate();
+        
+        const todayStr = getTodayStr();
+        let html = '';
+        
+        // Previous month days
+        for (let i = firstDay - 1; i >= 0; i--) {
+          const day = daysInPrevMonth - i;
+          html += `<button type="button" class="picker-day other-month" disabled>${day}</button>`;
+        }
+        
+        // Current month days
+        for (let day = 1; day <= daysInMonth; day++) {
+          const dateStr = `${pickerYear}-${String(pickerMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+          const isToday = dateStr === todayStr;
+          const isSelected = dateStr === selectedDate;
+          let classes = 'picker-day';
+          if (isToday) classes += ' today';
+          if (isSelected) classes += ' selected';
+          
+          html += `<button type="button" class="${classes}" onclick="selectDay('${dateStr}')">${day}</button>`;
+        }
+        
+        // Next month days to fill grid
+        const totalCells = firstDay + daysInMonth;
+        const remainingCells = (7 - (totalCells % 7)) % 7;
+        for (let day = 1; day <= remainingCells; day++) {
+          html += `<button type="button" class="picker-day other-month" disabled>${day}</button>`;
+        }
+        
+        grid.innerHTML = html;
+      }
+
+      function navigateMonth(direction) {
+        pickerMonth += direction;
+        if (pickerMonth < 0) {
+          pickerMonth = 11;
+          pickerYear--;
+        } else if (pickerMonth > 11) {
+          pickerMonth = 0;
+          pickerYear++;
+        }
+        renderCalendar();
+      }
+
+      function selectDay(dateStr) {
+        selectedDate = dateStr;
+        renderCalendar();
+      }
+
+      function setDateShortcut(type) {
+        const today = new Date();
+        let targetDate;
+        
+        switch (type) {
+          case 'today':
+            targetDate = today;
+            break;
+          case 'tomorrow':
+            targetDate = new Date(today);
+            targetDate.setDate(today.getDate() + 1);
+            break;
+          case 'nextweek':
+            targetDate = new Date(today);
+            targetDate.setDate(today.getDate() + 7);
+            break;
+        }
+        
+        selectedDate = fmt(targetDate);
+        pickerYear = targetDate.getFullYear();
+        pickerMonth = targetDate.getMonth();
+        renderCalendar();
+      }
+
+      function toggleTimeInputs() {
+        const toggle = document.getElementById('time-toggle');
+        const inputs = document.getElementById('time-inputs');
+        const isActive = toggle.classList.contains('active');
+        
+        if (isActive) {
+          toggle.classList.remove('active');
+          inputs.classList.remove('active');
+          // Reset to default 11:59 PM
+          document.getElementById('picker-hour').value = 11;
+          document.getElementById('picker-minute').value = 59;
+          document.getElementById('picker-period').value = 'PM';
+        } else {
+          toggle.classList.add('active');
+          inputs.classList.add('active');
+        }
+      }
+
+      function confirmDateSelection() {
+        if (!selectedDate) {
+          selectedDate = getTodayStr();
+        }
+        
+        // Get time values
+        let hour = parseInt(document.getElementById('picker-hour').value) || 11;
+        let minute = parseInt(document.getElementById('picker-minute').value) || 59;
+        const period = document.getElementById('picker-period').value;
+        
+        // Convert to 24-hour format
+        if (period === 'PM' && hour !== 12) hour += 12;
+        if (period === 'AM' && hour === 12) hour = 0;
+        
+        const timeStr = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+        
+        // Update hidden inputs
+        document.getElementById('kanban-date').value = selectedDate;
+        document.getElementById('kanban-time').value = timeStr;
+        
+        // Update display
+        const displayDate = new Date(selectedDate);
+        const displayStr = `${monthNames[displayDate.getMonth()].slice(0, 3)} ${displayDate.getDate()}, ${displayDate.getFullYear()}`;
+        
+        const timeToggle = document.getElementById('time-toggle');
+        if (timeToggle.classList.contains('active')) {
+          const displayHour = hour > 12 ? hour - 12 : (hour === 0 ? 12 : hour);
+          document.getElementById('kanban-date-display').value = 
+            `${displayStr} at ${displayHour}:${String(minute).padStart(2, '0')} ${period}`;
+        } else {
+          document.getElementById('kanban-date-display').value = displayStr;
+        }
+        
+        // Close picker
+        closeDatePicker();
+      }
+
+      function initDatePickerForEdit(dateStr) {
+        const d = new Date(dateStr);
+        selectedDate = dateStr;
+        pickerYear = d.getFullYear();
+        pickerMonth = d.getMonth();
+        
+        // Format display
+        const displayStr = `${monthNames[d.getMonth()].slice(0, 3)} ${d.getDate()}, ${d.getFullYear()}`;
+        document.getElementById('kanban-date-display').value = displayStr;
+        document.getElementById('kanban-date').value = dateStr;
+        
+        // Reset time toggle
+        document.getElementById('time-toggle').classList.remove('active');
+        document.getElementById('time-inputs').classList.remove('active');
+        document.getElementById('picker-hour').value = 11;
+        document.getElementById('picker-minute').value = 59;
+        document.getElementById('picker-period').value = 'PM';
+      }
+
+      // Close date picker when clicking outside
+      document.addEventListener('click', function(e) {
+        const wrapper = document.querySelector('.date-picker-wrapper');
+        const picker = document.getElementById('date-picker');
+        if (wrapper && picker && !wrapper.contains(e.target)) {
+          picker.classList.remove('active');
+        }
+      });
+
       function openKanbanModal() {
         document.getElementById("kanban-modal-title").textContent = "new task";
         document.getElementById("kanban-form").reset();
         document.getElementById("kanban-id").value = "";
-        // Set default date to today
-        document.getElementById("kanban-date").value = getTodayStr();
+        // Initialize date picker with today's date
+        initDatePickerForEdit(getTodayStr());
         openModal("kanban-modal");
       }
 
@@ -4458,8 +5308,8 @@ img.icon {
         document.getElementById("kanban-title").value = currentKanbanItem.title;
         document.getElementById("kanban-desc").value =
           currentKanbanItem.description || "";
-        document.getElementById("kanban-date").value =
-          currentKanbanItem.due_date;
+        // Initialize date picker with existing date
+        initDatePickerForEdit(currentKanbanItem.due_date);
         openModal("kanban-modal");
       }
 
