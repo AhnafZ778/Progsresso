@@ -6,6 +6,7 @@ from flask import Blueprint, request, jsonify
 from database.db import get_db
 from services.progress_service import ProgressService
 from services.task_service import TaskService
+from services.auth_service import AuthService
 
 progress_bp = Blueprint("progress", __name__, url_prefix="/api/progress")
 
@@ -13,6 +14,9 @@ progress_bp = Blueprint("progress", __name__, url_prefix="/api/progress")
 @progress_bp.route("/week", methods=["GET"])
 def get_week_progress():
     """Get progress for a specific week"""
+    if not AuthService.is_authenticated():
+        return jsonify({"error": "Unauthorized"}), 401
+
     try:
         from flask import session
 
@@ -29,6 +33,9 @@ def get_week_progress():
 @progress_bp.route("", methods=["POST"])
 def log_progress():
     """Log a progress entry"""
+    if not AuthService.is_authenticated():
+        return jsonify({"error": "Unauthorized"}), 401
+
     try:
         data = request.get_json()
 
@@ -66,6 +73,9 @@ def log_progress():
 @progress_bp.route("/<int:log_id>", methods=["PUT"])
 def update_progress(log_id):
     """Update a progress entry"""
+    if not AuthService.is_authenticated():
+        return jsonify({"error": "Unauthorized"}), 401
+
     try:
         data = request.get_json()
         log = ProgressService.update_progress(log_id, data)
@@ -79,6 +89,9 @@ def update_progress(log_id):
 @progress_bp.route("/<int:log_id>", methods=["DELETE"])
 def delete_progress(log_id):
     """Delete a progress entry"""
+    if not AuthService.is_authenticated():
+        return jsonify({"error": "Unauthorized"}), 401
+
     try:
         ProgressService.delete_progress(log_id)
         return jsonify({"message": "Progress deleted successfully"}), 200
@@ -89,6 +102,9 @@ def delete_progress(log_id):
 @progress_bp.route("/stats/<int:task_id>", methods=["GET"])
 def get_task_stats(task_id):
     """Get statistics for a specific task"""
+    if not AuthService.is_authenticated():
+        return jsonify({"error": "Unauthorized"}), 401
+
     try:
         # Check if task exists
         task = TaskService.get_task_by_id(task_id)
