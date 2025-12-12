@@ -5,6 +5,8 @@
 // Global state
 let currentWeekStart = null;
 let weekData = null;
+let isNavigating = false;
+let navigationController = null;
 
 // Initialize app
 document.addEventListener("DOMContentLoaded", () => {
@@ -80,23 +82,54 @@ function formatFullDate(dateStr) {
 }
 
 async function navigateWeek(direction) {
+  // Cancel any pending navigation request
+  if (navigationController) {
+    navigationController.abort();
+  }
+  
+  // Update the week immediately
   const newStart = new Date(currentWeekStart);
   newStart.setDate(newStart.getDate() + direction * 7);
   currentWeekStart = newStart;
+  
+  // Update the week label immediately for responsiveness
+  const weekEnd = new Date(currentWeekStart);
+  weekEnd.setDate(weekEnd.getDate() + 6);
+  const startLabel = formatDateDisplay(formatDate(currentWeekStart));
+  const endLabel = formatDateDisplay(formatDate(weekEnd));
+  const year = currentWeekStart.getFullYear();
+  document.getElementById("week-label").innerHTML = 
+    `<img src="/static/icons/icon_calendar.png" style="width: 16px; height: 16px; vertical-align: middle; margin-right: 4px;"> ${startLabel} - ${endLabel}, ${year}`;
+  
   await loadWeekData();
 }
 
 async function loadWeekData() {
+  // Create new abort controller for this request
+  navigationController = new AbortController();
+  const currentController = navigationController;
+  const requestedWeekStart = formatDate(currentWeekStart);
+  
   try {
-    const dateStr = formatDate(currentWeekStart);
-    const response = await fetch(`/api/progress/week?date=${dateStr}`);
+    const response = await fetch(`/api/progress/week?date=${requestedWeekStart}`, {
+      signal: currentController.signal
+    });
 
     if (!response.ok) throw new Error("Failed to load week data");
 
-    weekData = await response.json();
-    renderWeekView();
-    updateCharts();
+    const data = await response.json();
+    
+    // Only apply if this is still the current request (not aborted or superseded)
+    if (currentController === navigationController && formatDate(currentWeekStart) === requestedWeekStart) {
+      weekData = data;
+      renderWeekView();
+      updateCharts();
+    }
   } catch (error) {
+    // Ignore abort errors - they're expected when navigating quickly
+    if (error.name === 'AbortError') {
+      return;
+    }
     showToast("Failed to load data: " + error.message, "error");
   }
 }
